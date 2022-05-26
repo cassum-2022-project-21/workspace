@@ -6,7 +6,7 @@ import rebound
 import numpy as np
 from amuse.lab import *
 import matplotlib
-matplotlib.use('Agg')
+# matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import argparse
 

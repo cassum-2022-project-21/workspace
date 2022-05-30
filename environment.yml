@@ -1,0 +1,26 @@
+name: cassum-2022-project-21
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - fortran-compiler
+  - cxx-compiler
+  - make
+  - pip
+# Below are taken from rebound
+  - matplotlib
+  - ipywidgets
+# Below are taken from amuse
+  - setuptools>=45
+  - setuptools_scm>=6
+  - wheel
+  - docutils>=0.6
+  - numpy>=1.2.2
+  - pytest>=3.0
+  - mpi4py>=1.1.0
+  - h5py>=1.1.0
+# Below is taken from SiMon
+  - python-daemon
+# Below are our own packages
+  - ipykernel
+  - toml

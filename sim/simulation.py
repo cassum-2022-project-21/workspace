@@ -4,9 +4,8 @@ __author__ = "Maxwell Cai"
 from data_io import DataIO
 import rebound
 import numpy as np
-from amuse.lab import *
-import matplotlib
-# matplotlib.use('Agg')
+from amuse.units import units
+from amuse.ic.salpeter import new_powerlaw_mass_distribution
 import matplotlib.pyplot as plt
 import argparse
 
@@ -123,8 +122,8 @@ class Simulation(object):
             self.sim.move_to_com()
             # initialize the buffer
             self.buffer_rebound.initialize_buffer(self.sim.N)
-            lim = 2
-            fig = rebound.OrbitPlot(self.sim, color=True, unitlabel="[AU]", xlim=(-lim, lim), ylim=(-lim, lim))
+            lim = 0.2
+            fig, _ = rebound.OrbitPlot(self.sim, color=True, unitlabel="[AU]", xlim=(-lim, lim), ylim=(-lim, lim))
             plt.savefig('orbits.pdf')
             plt.close(fig)
 
@@ -145,7 +144,7 @@ class Simulation(object):
         semi = np.zeros(self.sim.N) * np.nan
         ecc = np.zeros(self.sim.N) * np.nan
         inc = np.zeros(self.sim.N) * np.nan
-        hashes = np.zeros(self.sim.N, dtype=np.int) * np.nan
+        hashes = np.zeros(self.sim.N, dtype=int) * np.nan
         orbits = self.sim.calculate_orbits()
         for i in range(self.sim.N):
             x[i] = self.sim.particles[i].x
@@ -169,7 +168,7 @@ class Simulation(object):
         if self.args.pa_rate == 0:
             return
         else:
-            pa_rate = self.args.pa_rate * self.args.store_dt
+            pa_rate = self.args.pa_rate * self.dt
             m_i2 = np.zeros(self.sim.N)
             for i in range(1, self.sim.N):
                 # m_i2[i] = self.sim.particles[i].m ** (4./3)
@@ -186,11 +185,11 @@ class Simulation(object):
             self.sim.integrate(self.args.t_end)
         else:
             e_init = self.sim.calculate_energy()
-            t_store = self.sim.t
+            self.t_store = self.sim.t
             while self.sim.t < self.args.t_end:
-                while self.sim.t < t_store + self.args.store_dt:
+                while self.sim.t < self.t_store + self.dt:
                     try:
-                        self.sim.integrate(t_store+self.args.store_dt)
+                        self.sim.integrate(self.t_store+self.dt)
                         self.pebble_accretion()
                     except rebound.Collision as error:
                         print('A collision occurred', error)
@@ -199,7 +198,7 @@ class Simulation(object):
                         de = abs((e-e_init)/e_init)
                         print('t = %f, N = %d, dE/E = %e' % (self.sim.t, self.sim.N, de))
                         self.store_hdf5_rebound(e)
-                t_store += self.args.store_dt
+                self.t_store += self.dt
                 e = self.sim.calculate_energy()
                 de = abs((e-e_init)/e_init)
                 print('t = %f, N = %d, dE/E = %e' % (self.sim.t, self.sim.N, de))
@@ -210,6 +209,10 @@ class Simulation(object):
             self.sim.stop()
         else:
             self.buffer_rebound.close()
+
+    @property
+    def dt(self):
+        return max(self.t_store / 10, 1)
 
 if __name__ == "__main__":
     sim = Simulation()

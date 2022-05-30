@@ -123,7 +123,8 @@ class Simulation(object):
             self.sim.move_to_com()
             # initialize the buffer
             self.buffer_rebound.initialize_buffer(self.sim.N)
-            fig = rebound.OrbitPlot(self.sim, color=True, unitlabel="[AU]", lim=2)
+            lim = 2
+            fig = rebound.OrbitPlot(self.sim, color=True, unitlabel="[AU]", xlim=(-lim, lim), ylim=(-lim, lim))
             plt.savefig('orbits.pdf')
             plt.close(fig)
 

@@ -2,23 +2,23 @@ import os
 import numpy as np
 from SiMon.ic_generator import InitialConditionGenerator
 from itertools import product
-# from random import sample
+from random import sample
 
 def gen_seeds():
-    return [100, 200, 300, 400, 500, 600]
-    # return sample(range(100000), 10)
+    return [38394, 47220, 61392, 62232, 69762, 812, 83482, 85197, 87199, 92809]
 
-def generate_ic(output_basedir=os.getcwd()):
+def generate_ic():
     parameter_space = {
         "random-seed": gen_seeds,
-        "t_end": 10000.0,
-        "N_end": 3,
-        "N_enddelay": 1000.0,
+        "t_end": 75000.0,
+        "N_end": 2,
+        "N_enddelay": 2000.0,
         "store-dt": 1.0,
-        "n-particles": 10,
+        "n-particles": 25,
         "code-name": "rebound",
         "alpha": [None, -2],
-        ("pa-rate", "pa-beta"): [(0.0, None), (1e-11, "2_3"), (1e-11, "4_3")]
+        "rebound-archive": "rebound_archive.bin",
+        ("pa-rate", "pa-beta"): [(0.0, None), (1e-11, "2_3")]
     }
 
     # templates
@@ -26,8 +26,8 @@ def generate_ic(output_basedir=os.getcwd()):
     executable_path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "simulation.py"
     )
-    start_cmd_template = "python -u {executable_path} {args} 1>output.txt 2>error.txt"
-    restart_cmd_template = "touch restart.txt ; python -u {executable_path} {args} 1>output.txt 2>error.txt"
+    start_cmd_template = "python -u {executable_path} {args} 1>>output.txt 2>>error.txt"
+    restart_cmd_template = "touch restart.txt ; python -u {executable_path} {args} 1>>output.txt 2>>error.txt"
     stop_cmd = "touch STOP"
     output_dir_template = "iopf_sim_ALPHA_{alpha}_BETA_{pa_beta}_{random_seed}"
 

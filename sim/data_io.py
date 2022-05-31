@@ -13,6 +13,7 @@ class DataIO(object):
         collision_output_file_name="collisions.txt",
         close_encounter_output_file_name="close_encounters.txt",
         CONST_G=1,
+        append=False
     ):
         # self.recorder = SimulationDataRecorder()
         self.buf_len = buf_len
@@ -41,6 +42,7 @@ class DataIO(object):
         self.h5_file = None
         self.h5_step_id = 0
         self.CONST_G = CONST_G
+        self.append = append
 
     def initialize_buffer(self, n_particles):
         if self.buf_initialized is False:
@@ -83,7 +85,12 @@ class DataIO(object):
             return
 
         if self.h5_file is None:
-            self.h5_file = h5py.File(self.output_file_name, "w")
+            if self.append and os.path.isfile(self.output_file_name):
+                self.h5_file = h5py.File(self.output_file_name, "a")
+                self.h5_step_id = max(int(group[5:]) for group in self.h5_file) + 1
+                print("set initial step id to ", self.h5_step_id)
+            else:
+                self.h5_file = h5py.File(self.output_file_name, "w")
             self.h5_file.attrs["G"] = self.CONST_G
         h5_step_group = self.h5_file.create_group("Step#%d" % self.h5_step_id)
 
@@ -247,7 +254,7 @@ class DataIO(object):
         try:
             import rebound
 
-            sim_reb = rebound.Simulation().from_file(reb_ic_filename)
+            sim_reb = rebound.Simulation(reb_ic_filename)
             sim_abie.CONST_G = sim_reb.G
             sim_abie.h = sim_reb.dt
             for particle_id in range(sim_reb.N):

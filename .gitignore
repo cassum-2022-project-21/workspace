@@ -130,4 +130,5 @@ dmypy.json
 
 *.pdf
 *.h5
-simon_simulations/
+simon_simulations*/
+*.bin

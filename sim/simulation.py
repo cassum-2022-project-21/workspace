@@ -8,6 +8,7 @@ from amuse.units import units
 from amuse.ic.salpeter import new_powerlaw_mass_distribution
 import matplotlib.pyplot as plt
 import argparse
+import os
 
 class Simulation(object):
 
@@ -17,6 +18,7 @@ class Simulation(object):
         self.buffer_rebound = None
         self.early_stop_time = None
         self.pa_beta_f = None
+        self.reb_continue = False
 
     def parse_arguments(self):
         parser = argparse.ArgumentParser()
@@ -43,9 +45,15 @@ class Simulation(object):
         parser.add_argument('--pa-rate', dest='pa_rate', type=float, default=0.0, help='The pebble accretion rate [MSun/yr]')
         parser.add_argument('--pa-beta', dest='pa_beta', type=str, default="2_3", help='The mass-dependent pebble accretion parameter')
 
+        parser.add_argument('--rebound-archive', dest='rebound_archive', type=str, default=None, help='A rebound archive to save to / read from (with --continue)')
+        parser.add_argument('--no-continue', dest='reb_no_continue', action='store_true', help="Prevent continuing from a rebound snapshot archive")
+
         self.args = parser.parse_args()
         n, d = self.args.pa_beta.split("_")
         self.pa_beta_f = float(n) / float(d)
+
+        if self.args.rebound_archive is None:
+            self.args.rebound_archive = f"rebound_archive_{self.args.seed}.bin"
 
     def init(self):
         if self.args.code == 'abie':
@@ -58,17 +66,22 @@ class Simulation(object):
 
         else:
             print('Using rebound as the integrator...')
-            self.sim = rebound.Simulation()
+            if not self.args.reb_no_continue and os.path.isfile(self.args.rebound_archive):
+                print('Able to continue from rebound archive', self.args.rebound_archive)
+                self.reb_continue = True
+            self.sim = rebound.Simulation(self.args.rebound_archive if self.reb_continue else None)
             self.sim.integrator = 'IAS15'
             self.sim.G = 4 * np.pi ** 2.0  # AU/MSun/yr
             self.sim.collision = 'direct'
             self.sim.collision_resolve = 'merge'
             # make use of ABIE data buffer
-            self.buffer_rebound = DataIO(output_file_name='data_reb_%d.h5' % self.args.seed, CONST_G=self.sim.G)
+            self.buffer_rebound = DataIO(output_file_name='data_reb_%d.h5' % self.args.seed, CONST_G=self.sim.G, append=True)
         print(self.args)
 
-
     def ic_generate(self):
+        if self.reb_continue:
+            raise RuntimeError("Generating ICs when continuing in rebound is prohibited. Use ic_continue() instead.")
+    
         np.random.seed(self.args.seed)
         # alpha = 0: random and uniform distribution of mass; alpha < 0: power-law IMF; alpha = None: equal-mass
         if self.args.alpha is None:
@@ -132,9 +145,13 @@ class Simulation(object):
             fig, _ = rebound.OrbitPlot(self.sim, color=True, unitlabel="[AU]", xlim=(-lim, lim), ylim=(-lim, lim))
             plt.savefig('orbits.pdf')
             plt.close(fig)
+    
+    def ic_continue(self):
+        self.buffer_rebound.initialize_buffer(self.sim.N)
 
+    def store_hdf5_rebound(self, energy):
+        self.sim.simulationarchive_snapshot(self.args.rebound_archive)
 
-    def store_hdf5_rebound(self ,energy):
         if self.sim.N < self.buffer_rebound.buf_x.shape[1]:
             self.buffer_rebound.flush()
             self.buffer_rebound.reset_buffer()
@@ -187,6 +204,7 @@ class Simulation(object):
         if self.args.code == 'abie':
             self.sim.integrate(self.args.t_end)
         else:
+            print('t = %f, N = %d' % (self.sim.t, self.sim.N))
             e_init = self.sim.calculate_energy()
             self.t_store = self.sim.t
             while self.sim.t < self.args.t_end and not self.should_early_stop:
@@ -235,7 +253,11 @@ if __name__ == "__main__":
     sim = Simulation()
     sim.parse_arguments()
     sim.init()
-    sim.ic_generate()
+
+    if sim.reb_continue:
+        sim.ic_continue()
+    else:
+        sim.ic_generate()
 
     def interrupt_handler(signum, frame):
         print(f"Interrupt at {sim.sim.t=}. Calling sim.finalize()", file=sys.stderr)

@@ -134,17 +134,17 @@ class Simulation(object):
             self.buffer_rebound.reset_buffer()
             self.buffer_rebound.initialize_buffer(self.sim.N)
         # Special routine to store rebound data into ABIE HDF5 format
-        x = np.zeros(self.sim.N) * np.nan
-        y = np.zeros(self.sim.N) * np.nan
-        z = np.zeros(self.sim.N) * np.nan
-        vx = np.zeros(self.sim.N) * np.nan
-        vy = np.zeros(self.sim.N) * np.nan
-        vz = np.zeros(self.sim.N) * np.nan
-        masses = np.zeros(self.sim.N) * np.nan
-        semi = np.zeros(self.sim.N) * np.nan
-        ecc = np.zeros(self.sim.N) * np.nan
-        inc = np.zeros(self.sim.N) * np.nan
-        hashes = np.zeros(self.sim.N, dtype=int) * np.nan
+        x = np.full(self.sim.N, np.nan)
+        y = np.full(self.sim.N, np.nan)
+        z = np.full(self.sim.N, np.nan)
+        vx = np.full(self.sim.N, np.nan)
+        vy = np.full(self.sim.N, np.nan)
+        vz = np.full(self.sim.N, np.nan)
+        masses = np.full(self.sim.N, np.nan)
+        semi = np.full(self.sim.N, np.nan)
+        ecc = np.full(self.sim.N, np.nan)
+        inc = np.full(self.sim.N, np.nan)
+        hashes = np.full(self.sim.N, -1, dtype=int)
         orbits = self.sim.calculate_orbits()
         for i in range(self.sim.N):
             x[i] = self.sim.particles[i].x
@@ -215,9 +215,23 @@ class Simulation(object):
         return max(self.t_store / 10, 1)
 
 if __name__ == "__main__":
+    import signal
+    import sys
+
     sim = Simulation()
     sim.parse_arguments()
     sim.init()
     sim.ic_generate()
-    sim.evolve_model()
-    sim.finalize()
+
+    def interrupt_handler(signum, frame):
+        print(f"Interrupt at {sim.sim.t=}. Calling sim.finalize()", file=sys.stderr)
+        sim.finalize()
+        sys.exit(1)
+
+    signal.signal(signal.SIGINT, interrupt_handler)
+
+    try:
+        sim.evolve_model()
+        sim.finalize()
+    except KeyboardInterrupt:
+        interrupt_handler(None, None)

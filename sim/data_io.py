@@ -45,21 +45,21 @@ class DataIO(object):
     def initialize_buffer(self, n_particles):
         if self.buf_initialized is False:
             buf_len = self.buf_len
-            self.buf_t = np.zeros(buf_len) * np.nan
-            self.buf_energy = np.zeros(buf_len) * np.nan
-            self.buf_mass = np.zeros((buf_len, n_particles)) * np.nan
-            self.buf_ptype = np.zeros((buf_len, n_particles), dtype=np.int) * np.nan
-            self.buf_hashes = np.zeros((buf_len, n_particles), dtype=np.int) * np.nan
-            self.buf_radius = np.zeros((buf_len, n_particles)) * np.nan
-            self.buf_x = np.zeros((buf_len, n_particles)) * np.nan
-            self.buf_y = np.zeros((buf_len, n_particles)) * np.nan
-            self.buf_z = np.zeros((buf_len, n_particles)) * np.nan
-            self.buf_vx = np.zeros((buf_len, n_particles)) * np.nan
-            self.buf_vy = np.zeros((buf_len, n_particles)) * np.nan
-            self.buf_vz = np.zeros((buf_len, n_particles)) * np.nan
-            self.buf_semi = np.zeros((buf_len, n_particles)) * np.nan
-            self.buf_ecc = np.zeros((buf_len, n_particles)) * np.nan
-            self.buf_inc = np.zeros((buf_len, n_particles)) * np.nan
+            self.buf_t = np.full(buf_len, np.nan)
+            self.buf_energy = np.full(buf_len, np.nan)
+            self.buf_mass = np.full((buf_len, n_particles), np.nan)
+            self.buf_ptype = np.full((buf_len, n_particles), -1, dtype=int)
+            self.buf_hashes = np.full((buf_len, n_particles), -1, dtype=int)
+            self.buf_radius = np.full((buf_len, n_particles), np.nan)
+            self.buf_x = np.full((buf_len, n_particles), np.nan)
+            self.buf_y = np.full((buf_len, n_particles), np.nan)
+            self.buf_z = np.full((buf_len, n_particles), np.nan)
+            self.buf_vx = np.full((buf_len, n_particles), np.nan)
+            self.buf_vy = np.full((buf_len, n_particles), np.nan)
+            self.buf_vz = np.full((buf_len, n_particles), np.nan)
+            self.buf_semi = np.full((buf_len, n_particles), np.nan)
+            self.buf_ecc = np.full((buf_len, n_particles), np.nan)
+            self.buf_inc = np.full((buf_len, n_particles), np.nan)
             self.buf_cursor = 0
             # self.h5_step_id = 0
             # remove the previously generated collision / close encounter files

@@ -247,5 +247,6 @@ if __name__ == "__main__":
     try:
         sim.evolve_model()
         sim.finalize()
+        open("DONE", "w").close()
     except KeyboardInterrupt:
         interrupt_handler(None, None)

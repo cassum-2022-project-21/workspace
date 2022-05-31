@@ -14,3 +14,12 @@ To update the environment from the file use
 {mamba,conda} env update --file environment.yml
 pip install -U -r requirements.txt --no-deps --no-build-isolation
 ```
+
+Ideally, figures are more or less reproducible from the code in this repository with the git tag corresponding to their file name. Not sure if the simulation code is deterministic?
+
+Steps to reproduce simulations:
+- First install packages as above
+- `cd sim/`
+- `python ic_generator.py`
+- `simon start`
+- check simulation progress with `simon` 

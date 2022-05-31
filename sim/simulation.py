@@ -16,11 +16,14 @@ class Simulation(object):
         self.args = None
         self.sim = None
         self.buffer_rebound = None
+        self.early_stop_time = None
 
     def parse_arguments(self):
         parser = argparse.ArgumentParser()
         parser.add_argument('-s', '--random-seed', dest='seed', type=int, default=0, help='random seed')
         parser.add_argument('-t', '--t_end', dest='t_end', type=float, default=10.0, help='Termination time')
+        parser.add_argument('--N_end', dest='N_end', type=int, default=-1, help='# of particles for early termination')
+        parser.add_argument('--N_enddelay', dest='N_enddelay', type=float, default=10000.0, help='Delay on early termination [yr]')
         parser.add_argument('-d', '--store-dt', dest='store_dt', type=float, default=1.0, help='Snapshot time')
         parser.add_argument('-n', '--n-particles', dest='n_p', type=int, default=100, help='number of planetesimals')
         parser.add_argument('-c', '--code-name', dest='code', type=str, default=None, help='N-body code name')
@@ -186,7 +189,7 @@ class Simulation(object):
         else:
             e_init = self.sim.calculate_energy()
             self.t_store = self.sim.t
-            while self.sim.t < self.args.t_end:
+            while self.sim.t < self.args.t_end and not self.should_early_stop:
                 while self.sim.t < self.t_store + self.dt:
                     try:
                         self.sim.integrate(self.t_store+self.dt)
@@ -198,6 +201,8 @@ class Simulation(object):
                         de = abs((e-e_init)/e_init)
                         print('t = %f, N = %d, dE/E = %e' % (self.sim.t, self.sim.N, de))
                         self.store_hdf5_rebound(e)
+                        # update early stopping condition
+                        self.reset_early_stop()
                 self.t_store += self.dt
                 e = self.sim.calculate_energy()
                 de = abs((e-e_init)/e_init)
@@ -210,9 +215,18 @@ class Simulation(object):
         else:
             self.buffer_rebound.close()
 
+    def reset_early_stop(self):
+        if self.sim.N <= self.args.N_end:
+            self.early_stop_time = self.sim.t + self.args.N_enddelay
+            print(f"Early stopping by t={self.early_stop_time} barring no further collisions")
+
+    @property
+    def should_early_stop(self):
+        return self.early_stop_time is not None and self.sim.t > self.early_stop_time
+
     @property
     def dt(self):
-        return max(self.t_store / 10, 1)
+        return max(np.around(self.t_store / 10), 1)
 
 if __name__ == "__main__":
     import signal

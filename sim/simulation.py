@@ -9,7 +9,6 @@ from amuse.ic.salpeter import new_powerlaw_mass_distribution
 import matplotlib.pyplot as plt
 import argparse
 
-
 class Simulation(object):
 
     def __init__(self):
@@ -17,6 +16,7 @@ class Simulation(object):
         self.sim = None
         self.buffer_rebound = None
         self.early_stop_time = None
+        self.pa_beta_f = None
 
     def parse_arguments(self):
         parser = argparse.ArgumentParser()
@@ -41,8 +41,11 @@ class Simulation(object):
         parser.add_argument('--planet-rh', dest='prh', type=float, default=10.0, help='Separation between the planet and the planetesimal rings [Hill radii]')
         parser.add_argument('--planet-rho', dest='prho', type=float, default=5.0, help='The mean density of the planet [g/cm^3]')
         parser.add_argument('--pa-rate', dest='pa_rate', type=float, default=0.0, help='The pebble accretion rate [MSun/yr]')
+        parser.add_argument('--pa-beta', dest='pa_beta', type=str, default="2_3", help='The mass-dependent pebble accretion parameter')
 
         self.args = parser.parse_args()
+        n, d = self.args.pa_beta.split("_")
+        self.pa_beta_f = float(n) / float(d)
 
     def init(self):
         if self.args.code == 'abie':
@@ -174,13 +177,10 @@ class Simulation(object):
             pa_rate = self.args.pa_rate * self.dt
             m_i2 = np.zeros(self.sim.N)
             for i in range(1, self.sim.N):
-                # m_i2[i] = self.sim.particles[i].m ** (4./3)
-                m_i2[i] = self.sim.particles[i].m ** (2./3)
+                m_i2[i] = self.sim.particles[i].m ** self.pa_beta_f
             mtot = m_i2.sum()
             for i in range(1, self.sim.N):
                 self.sim.particles[i].m += (m_i2[i]/mtot*pa_rate)
-
-
 
     def evolve_model(self):
         print('Start integration...')

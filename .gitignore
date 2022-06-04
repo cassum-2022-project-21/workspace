@@ -132,3 +132,9 @@ dmypy.json
 *.h5
 simon_simulations*/
 *.bin
+
+
+# gitignore these for now because I don't want to deal with submodules at 3am!
+src/rebound
+src/astrosimon
+

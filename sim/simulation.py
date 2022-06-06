@@ -80,6 +80,7 @@ class Simulation(object):
             self.sim.collision_resolve = 'merge'
             # make use of ABIE data buffer
             self.buffer_rebound = DataIO(output_file_name='data_reb_%d.h5' % self.args.seed, CONST_G=self.sim.G, append=True)
+
         print(self.args)
 
     def ic_generate(self):
@@ -149,9 +150,31 @@ class Simulation(object):
             fig, _ = rebound.OrbitPlot(self.sim, color=True, unitlabel="[AU]", xlim=(-lim, lim), ylim=(-lim, lim))
             plt.savefig('orbits.pdf')
             plt.close(fig)
+
+            self.add_drag_force()
     
     def ic_continue(self):
+        self.add_drag_force()
         self.buffer_rebound.initialize_buffer(self.sim.N)
+
+    def add_drag_force(self):
+        if self.args.C_d != 0.0:
+            ps = self.sim.particles[1:] # exclude star
+            C_d = self.args.C_d
+
+            r, vt_gas_cms, vr_gas_cms = np.loadtxt(self.args.velocity_file)
+            vt_gas = (vt_gas_cms | (units.cm / units.s)).value_in(units.AU / units.yr)
+            vr_gas = (vr_gas_cms | (units.cm / units.s)).value_in(units.AU / units.yr)
+
+            _, rho_0_cms = np.loadtxt(self.args.density_file)
+            rho_0 = (rho_0_cms | (units.g / units.cm**3)).value_in(units.MSun / (units.AU**3))
+
+            def drag_force(reb_sim):
+                pass
+
+            self.sim.additional_forces = drag_force
+            self.sim.force_is_velocity_dependent = 1
+
 
     def store_hdf5_rebound(self, energy):
         self.sim.simulationarchive_snapshot(self.args.rebound_archive)

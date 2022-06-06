@@ -244,7 +244,7 @@ class Simulation(object):
 
     @property
     def dt(self):
-        return max(np.around(self.t_store / 10), 1)
+        return max(np.around(self.t_store / 5), 1)
 
 if __name__ == "__main__":
     import signal

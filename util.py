@@ -27,4 +27,5 @@ def read_params(name):
     return ParamSet(alpha, beta, seed)
 
 def find_all_simulations(dir):
-    return { read_params(h5path.parent.name): h5path for h5path in Path(dir).glob("iopf_sim_*/*.h5") }
+    p = Path(dir)
+    return { read_params(h5path.parts[len(p.parts)]): h5path for h5path in p.glob("iopf_sim_*/**/*.h5") }

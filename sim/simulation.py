@@ -48,6 +48,10 @@ class Simulation(object):
         parser.add_argument('--rebound-archive', dest='rebound_archive', type=str, default=None, help='A rebound archive to save to / read from (with --continue)')
         parser.add_argument('--no-continue', dest='reb_no_continue', action='store_true', help="Prevent continuing from a rebound snapshot archive")
 
+        parser.add_argument('-C', '--drag-coefficient', dest="C_d", type=float, default=0.0, help="The drag coefficient C_d")
+        parser.add_argument('--velocity-file', nargs="?", dest="velocity_file", type=str, const="velocity.txt", default=None)
+        parser.add_argument('--density-file', nargs="?", dest="density_file", type=str, const="density.txt", default=None)
+
         self.args = parser.parse_args()
         n, d = self.args.pa_beta.split("_")
         self.pa_beta_f = float(n) / float(d)

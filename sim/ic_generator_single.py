@@ -11,11 +11,20 @@ def generate_ic_single():
         "N_end": 2,
         "N_enddelay": 2000.0,
         "store-dt": 1.0,
-        "n-particles": 25,
-        "code-name": "rebound",
+        "n-particles": 2,
         "alpha": -2,
+        "code-name": "rebound",
         "rebound-archive": "rebound_archive.bin",
-        ("pa-rate", "pa-beta"): (0.0, None)
+        ("pa-rate", "pa-beta"): (0.0, None),
+
+        "m-total": 1.0,
+        "a-in": 0.23,
+        "a-out": 0.24,
+        "std-e": 0.1,
+
+        "drag-coefficient": [0.0, 1.0],
+        "velocity-file": "/home/alchzh/cassum-2022-project-21/workspace/disk/velocity.txt",
+        "density-file": "/home/alchzh/cassum-2022-project-21/workspace/disk/midplane_density_2.txt"
     }
 
     # templates
@@ -26,7 +35,7 @@ def generate_ic_single():
     start_cmd_template = "rm -f DONE ; python -u {executable_path} {args} 1>>output.txt 2>>error.txt"
     restart_cmd_template = "touch restart.txt ; python -u {executable_path} {args} 1>>output.txt 2>>error.txt"
     stop_cmd = "touch STOP"
-    output_dir_template = "iopf_sim_ALPHA_{alpha}_BETA_{pa_beta}_{random_seed}"
+    output_dir_template = "iopf_sim_DRAG_{drag_coefficient}__ALPHA_{alpha}_BETA_{pa_beta}_{random_seed}"
 
     # IC generator
     ic = InitialConditionGenerator(conf_file="SiMon.conf")

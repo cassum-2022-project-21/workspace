@@ -9,6 +9,11 @@ from amuse.ic.salpeter import new_powerlaw_mass_distribution
 import matplotlib.pyplot as plt
 import argparse
 import os
+from scipy.interpolate import interp1d
+
+def mag_dir_2d(x, y):
+    r = np.sqrt(x*x + y*y)
+    return r, x / r, y / r
 
 class Simulation(object):
 
@@ -34,8 +39,8 @@ class Simulation(object):
         parser.add_argument('--alpha', dest='alpha', default=None, help='Planetesimal mass function power index')
         parser.add_argument('--std-i', dest='std_i', default=0.01, type=float, help='Standard derivation of inclination (rad)')
         parser.add_argument('--std-e', dest='std_e', default=0.02, type=float, help='Standard deviation of eccentricity')
-        parser.add_argument('-m', '-m-total', dest='m_total', type=float, default=1.0, help='Planetesimal total mass [MEarth]')
-        parser.add_argument('-M', '-m-star', dest='m_star', type=float, default=1.0, help='host star mass [MSun]')
+        parser.add_argument('-m', '--m-total', dest='m_total', type=float, default=1.0, help='Planetesimal total mass [MEarth]')
+        parser.add_argument('-M', '--m-star', dest='m_star', type=float, default=1.0, help='host star mass [MSun]')
         parser.add_argument('--rho', dest='rho', type=float, default=2.0, help='Density of planetesimals [g/cm^3]')
         parser.add_argument('--ef', dest='ef', type=float, default=1.0, help='Radii enlargement factor')
         parser.add_argument('--planet-mass', dest='pm', type=float, default=0.0, help='The mass of the inner super-Earth. If 0, the super-Earth will not be included.[MEarth]')
@@ -159,19 +164,38 @@ class Simulation(object):
 
     def add_drag_force(self):
         if self.args.C_d != 0.0:
-            ps = self.sim.particles[1:] # exclude star
             C_d = self.args.C_d
 
-            r, vt_gas_cms, vr_gas_cms = np.loadtxt(self.args.velocity_file)
+            r, vt_gas_cms, vr_gas_cms = np.loadtxt(self.args.velocity_file).T
             vt_gas = (vt_gas_cms | (units.cm / units.s)).value_in(units.AU / units.yr)
             vr_gas = (vr_gas_cms | (units.cm / units.s)).value_in(units.AU / units.yr)
 
-            _, rho_0_cms = np.loadtxt(self.args.density_file)
+            _, rho_0_cms = np.loadtxt(self.args.density_file).T
             rho_0 = (rho_0_cms | (units.g / units.cm**3)).value_in(units.MSun / (units.AU**3))
+            
+            interpf = interp1d(r, np.stack([vt_gas, vr_gas, rho_0]))
 
             def drag_force(reb_sim):
-                pass
+                for p in self.sim.particles[1:]:
+                    x = p.x
+                    y = p.y
+                    # z = p.z
 
+                    _r, ux, uy = mag_dir_2d(x, y)
+
+                    _vt_gas, _vr_gas, _rho_0 = interpf(_r)
+
+                    vx_rel = ux * _vr_gas - uy * _vt_gas - p.vx
+                    vy_rel = uy * _vr_gas + ux * _vt_gas - p.vy
+                    v_rel, ux_rel, uy_rel = mag_dir_2d(vx_rel, vy_rel)
+
+                    A = np.pi * p.r * p.r
+                    F_d = 0.5 * _rho_0 * v_rel * v_rel * C_d * A
+
+                    p.ax += F_d * ux_rel
+                    p.ay += F_d * uy_rel
+
+            self.drag_force = drag_force
             self.sim.additional_forces = drag_force
             self.sim.force_is_velocity_dependent = 1
 
@@ -233,6 +257,7 @@ class Simulation(object):
         else:
             print('t = %f, N = %d' % (self.sim.t, self.sim.N))
             e_init = self.sim.calculate_energy()
+            self.store_hdf5_rebound(e_init)
             self.t_store = self.sim.t
             while self.sim.t < self.args.t_end and not self.should_early_stop:
                 while self.sim.t < self.t_store + self.dt:
@@ -259,6 +284,10 @@ class Simulation(object):
             self.sim.stop()
         else:
             self.buffer_rebound.close()
+    
+    def save(self):
+        e = self.sim.calculate_energy()
+        self.store_hdf5_rebound(e)
 
     def reset_early_stop(self):
         if self.sim.N <= self.args.N_end:
@@ -294,7 +323,7 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, interrupt_handler)
 
     try:
-        sim.evolve_model()
+        sim.save()
         sim.finalize()
         open("DONE", "w").close()
     except KeyboardInterrupt:

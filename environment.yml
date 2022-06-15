@@ -24,3 +24,4 @@ dependencies:
 # Below are our own packages
   - ipykernel
   - toml
+  - scipy

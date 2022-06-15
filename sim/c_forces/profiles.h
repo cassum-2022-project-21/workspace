@@ -1,29 +1,14 @@
 #ifndef IOPF_PROFILES
 #define IOPF_PROFILES
 
-#include <stddef.h>
+#include <inttypes.h>
 
-extern double VELOCITY_PROF[2][64];
-extern size_t VELOCITY_PROF_N;
+#define STD_PROF_NMAX __UINT_FAST8_MAX__ /* The maximum profile length we accept */
 
-extern double DENSITY_PROF[64];
-extern size_t DENSITY_PROF_N;
+extern uint_fast8_t STD_PROF_X_N; /* The actual length of the profiles loaded (user-defined) */
 
-struct interp_loc {
-    size_t idx;
-    double s;
-};
-
-// locate_* require x to be sorted increasing
-struct interp_loc interp_locate_linear(double x, double* xs, size_t N);
-struct interp_loc interp_locate_binary(double x, double* xs, size_t N);
-
-double evaluate(struct interp_loc loc, double* xs);
-
-#ifdef IOPF_BINARY_LOCATE
-#define interp_locate interp_locate_binary
-#else
-#define interp_locate interp_locate_linear
-#endif
+extern double STD_PROF_X[STD_PROF_NMAX]; /* The radii of the velocity/density/etc. samples */
+extern double VELOCITY_PROF[2][STD_PROF_NMAX]; /* The gas velocity profile at the radii in STD_PROF_X. VELOCITY_PROF[0] is tangential, VELOCITY_PROF[1] is radial */
+extern double DENSITY_PROF[STD_PROF_NMAX]; /* The gas density profile at the radii in STD_PROF_X */
 
 #endif

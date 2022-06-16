@@ -3,6 +3,8 @@
 
 #include <rebound.h>
 
+#include "drag_force.h"
+
 void IOPF_drag_all(struct reb_simulation* reb_sim);
 
 #endif

@@ -12,11 +12,7 @@ struct interp_loc {
 struct interp_loc interp_locate_linear(const double x, const double* const xs, const uint_fast8_t N);
 struct interp_loc interp_locate_binary(const double x, const double* const xs, const uint_fast8_t N);
 
-#ifdef IOPF_BINARY_LOCATE
 #define interp_locate interp_locate_binary
-#else
-#define interp_locate interp_locate_linear
-#endif
 
 double interp_eval(const struct interp_loc loc, const double* const ys);
 

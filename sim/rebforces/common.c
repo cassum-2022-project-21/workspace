@@ -13,6 +13,22 @@ struct interp_loc interp_locate_linear(const double x, const double* const xs, c
     return (struct interp_loc){ NAN, N };
 }
 
+struct interp_loc interp_locate_binary(const double x, const double* const xs, const uint_fast8_t N) {
+    uint_fast8_t begin = 0;
+    uint_fast8_t end = N;
+
+    while (begin < end) {
+        uint_fast8_t mid = (begin + end) / 2;
+        if (xs[mid] >= x) {
+            end = mid;
+        } else {
+            begin = mid + 1;
+        }
+    }
+
+    return (struct interp_loc){ (x - xs[end-1])/(xs[end] - xs[end-1]), end-1 };
+}
+
 double interp_eval(const struct interp_loc loc, const double* const ys) {
     return ys[loc.idx] + loc.s * (ys[loc.idx+1] - ys[loc.idx]);
 }

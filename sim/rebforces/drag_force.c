@@ -11,7 +11,7 @@ double IOPF_drag_force(struct reb_particle* const p) {
     double r, ux, uy;
     mag_dir_2d(p->x, p->y, &r, &ux, &uy);
 
-    struct interp_loc iloc = interp_locate(r, STD_PROF_X, STD_PROF_X_N);
+    struct interp_loc iloc = interp_locate(r, STD_PROF_X, STD_PROF_N);
 
     double vt_gas = interp_eval(iloc, VELOCITY_PROF[0]);
     double vr_gas = interp_eval(iloc, VELOCITY_PROF[1]);

@@ -164,40 +164,42 @@ class Simulation(object):
 
     def add_drag_force(self):
         if self.args.C_d != 0.0:
-            C_d = self.args.C_d
+            import c_forces
 
-            r, vt_gas_cms, vr_gas_cms = np.loadtxt(self.args.velocity_file).T
-            vt_gas = (vt_gas_cms | (units.cm / units.s)).value_in(units.AU / units.yr)
-            vr_gas = (vr_gas_cms | (units.cm / units.s)).value_in(units.AU / units.yr)
+            # C_d = self.args.C_d
 
-            _, rho_0_cms = np.loadtxt(self.args.density_file).T
-            rho_0 = (rho_0_cms | (units.g / units.cm**3)).value_in(units.MSun / (units.AU**3))
+            # r, vt_gas_cms, vr_gas_cms = np.loadtxt(self.args.velocity_file).T
+            # vt_gas = (vt_gas_cms | (units.cm / units.s)).value_in(units.AU / units.yr)
+            # vr_gas = (vr_gas_cms | (units.cm / units.s)).value_in(units.AU / units.yr)
+
+            # _, rho_0_cms = np.loadtxt(self.args.density_file).T
+            # rho_0 = (rho_0_cms | (units.g / units.cm**3)).value_in(units.MSun / (units.AU**3))
             
-            interpf = interp1d(r, np.stack([vt_gas, vr_gas, rho_0]))
+            # interpf = interp1d(r, np.stack([vt_gas, vr_gas, rho_0]))
 
-            def drag_force(reb_sim):
-                for p in self.sim.particles[1:]:
-                    x = p.x
-                    y = p.y
-                    # z = p.z
+            # def drag_force(reb_sim):
+            #     for p in self.sim.particles[1:]:
+            #         x = p.x
+            #         y = p.y
+            #         # z = p.z
 
-                    _r, ux, uy = mag_dir_2d(x, y)
+            #         _r, ux, uy = mag_dir_2d(x, y)
 
-                    _vt_gas, _vr_gas, _rho_0 = interpf(_r)
+            #         _vt_gas, _vr_gas, _rho_0 = interpf(_r)
 
-                    vx_rel = ux * _vr_gas - uy * _vt_gas - p.vx
-                    vy_rel = uy * _vr_gas + ux * _vt_gas - p.vy
-                    v_rel, ux_rel, uy_rel = mag_dir_2d(vx_rel, vy_rel)
+            #         vx_rel = ux * _vr_gas - uy * _vt_gas - p.vx
+            #         vy_rel = uy * _vr_gas + ux * _vt_gas - p.vy
+            #         v_rel, ux_rel, uy_rel = mag_dir_2d(vx_rel, vy_rel)
 
-                    A = np.pi * p.r * p.r
-                    F_d = 0.5 * _rho_0 * v_rel * v_rel * C_d * A
+            #         A = np.pi * p.r * p.r
+            #         F_d = 0.5 * _rho_0 * v_rel * v_rel * C_d * A
 
-                    p.ax += F_d * ux_rel
-                    p.ay += F_d * uy_rel
+            #         p.ax += F_d * ux_rel / p.m
+            #         p.ay += F_d * uy_rel / p.m
 
-            self.drag_force = drag_force
-            self.sim.additional_forces = drag_force
-            self.sim.force_is_velocity_dependent = 1
+            # self.drag_force = drag_force
+            # self.sim.additional_forces = drag_force
+            # self.sim.force_is_velocity_dependent = 1
 
 
     def store_hdf5_rebound(self, energy):

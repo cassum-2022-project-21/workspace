@@ -7,7 +7,7 @@
 
 double DRAG_COEFF;
 
-double IOPF_drag_force(struct reb_particle* const p) {
+void IOPF_drag_force(struct reb_particle* const p) {
     double r, ux, uy;
     mag_dir_2d(p->x, p->y, &r, &ux, &uy);
 
@@ -17,16 +17,17 @@ double IOPF_drag_force(struct reb_particle* const p) {
     double vr_gas = interp_eval(iloc, VELOCITY_PROF[1]);
     double rho_0 = interp_eval(iloc, DENSITY_PROF);
 
-    double vx_rel = ux * vr_gas - uy * vt_gas - p->vx;
-    double vy_rel = uy * vr_gas + ux * vt_gas - p->vy;
+    double vx_gas = ux * vr_gas - uy * vt_gas;
+    double vy_gas = uy * vr_gas + ux * vt_gas;
+
+    double vx_rel = vx_gas - p->vx;
+    double vy_rel = vy_gas - p->vy;
     
     double v_rel2, ux_rel, uy_rel;
     mag2_dir_2d(vx_rel, vy_rel, &v_rel2, &ux_rel, &uy_rel);
 
-    double a_d = 0.5 * rho_0 * v_rel2 * IOPF_PI * DRAG_COEFF / p->m;
+    double a_d = (0.5 * rho_0 * v_rel2 * IOPF_PI * p->r * p->r) / p->m;
 
-    p->ax += a_d * ux;
-    p->ay += a_d * uy;
-
-    return a_d;
+    p->ax += a_d * ux_rel;
+    p->ay += a_d * uy_rel;
 }

@@ -5,13 +5,16 @@
 
 #include "../common.h"
 
+#define SCALE 1.01 /* Super-Keplerian gas */
+// #define SCALE 0.99 /* Sub-Keplerian gas */
+
 void heartbeat(struct reb_simulation *reb_sim) {
     if (reb_output_check(reb_sim, 1000. * 0.618033989)) {
         struct reb_particle* p = &reb_sim->particles[1];
         double r, ux, uy;
         mag_dir_2d(p->x, p->y, &r, &ux, &uy);
 
-        double v_k = (0.95 * 2 * IOPF_PI) / sqrt(r);
+        double v_k = (SCALE * 2 * IOPF_PI) / sqrt(r);
         double vx_k = -v_k * uy;
         double vy_k = v_k * ux;
 
@@ -37,7 +40,7 @@ void sub_keplerian_drag(struct reb_simulation *reb_sim) {
     double r, ux, uy;
     mag_dir_2d(p->x, p->y, &r, &ux, &uy);
 
-    double v_k = (0.99 * 2 * IOPF_PI) / sqrt(r);
+    double v_k = (SCALE * 2 * IOPF_PI) / sqrt(r);
     double vx_k = -v_k * uy;
     double vy_k = v_k * ux;
 

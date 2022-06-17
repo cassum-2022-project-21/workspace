@@ -5,6 +5,6 @@
 
 extern double DRAG_COEFF;
 
-double IOPF_drag_force(struct reb_particle* const p);
+void IOPF_drag_force(struct reb_particle* const p);
 
 #endif

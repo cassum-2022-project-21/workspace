@@ -35,3 +35,7 @@ double interp_eval(const struct interp_loc loc, const double* const ys) {
 
 extern inline void mag_dir_2d(const double x, const double y, double* const r, double* const ux, double* const uy);
 extern inline void mag2_dir_2d(const double x, const double y, double* const r2, double* const ux, double* const uy);
+
+const double IOPF_PI = 3.14159265358979323846;
+const double CM_PER_S = 2.109532e-6;
+const double G_PER_CM3 = 1.683289e+6;

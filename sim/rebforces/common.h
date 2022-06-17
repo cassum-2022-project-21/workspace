@@ -29,6 +29,8 @@ inline void mag2_dir_2d(const double x, const double y, double* const r2, double
     *uy = y * isr;
 }
 
-#define IOPF_PI 3.14159265358979323846 /* M_PI on GNU... consistency if we run on other system */
+extern const double IOPF_PI; /* M_PI on GNU. consistency if we run on other system */
+extern const double CM_PER_S; /* 1 cm/s to AU/sidereal year */
+extern const double G_PER_CM3; /* 1 g / cm^3 to solar mass / AU^3 */
 
 #endif

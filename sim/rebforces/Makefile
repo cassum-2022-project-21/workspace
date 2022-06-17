@@ -1,6 +1,7 @@
 INCLUDES = -I../../src/rebound/src
-# CFLAGS   = -g -std=c99 -fPIC -O3 -march=native -fno-math-errno -freciprocal-math -fno-trapping-math -fno-signaling-nans -Wall $(INCLUDES)
-CFLAGS = -g -std=c99 -fPIC -Wall $(INCLUDES)
+# CFLAGS = -g -std=c99 -fPIC -O0 -Wall $(INCLUDES)
+CFLAGS   = -g -std=c99 -fPIC -O3 -march=native -fno-math-errno -freciprocal-math -fno-trapping-math -fno-signaling-nans -Wall $(INCLUDES)
+# CFLAGS = -g -std=c99 -fPIC -Wall $(INCLUDES)
 
 LDFLAGS = -shared	
 # LDLIBS = -lrebound

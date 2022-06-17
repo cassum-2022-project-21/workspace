@@ -138,3 +138,5 @@ simon_simulations*/
 src/rebound
 src/astrosimon
 
+sim/rebforces/test/test*
+!sim/rebforces/test/*.c

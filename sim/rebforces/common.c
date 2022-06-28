@@ -33,6 +33,25 @@ double interp_eval(const struct interp_loc loc, const double* const ys) {
     return ys[loc.idx] + loc.s * (ys[loc.idx+1] - ys[loc.idx]);
 }
 
+double interp_eval_cubic(const struct interp_loc loc, const double* const ys) {
+    double s2 = loc.s * loc.s;
+
+    double y0 = ys[loc.idx-1];
+    double y1 = ys[loc.idx];
+    double y2 = ys[loc.idx+1];
+    double y3 = ys[loc.idx+2];
+
+    double a0 = y3 - y2 - y0 + y1;
+    double a1 = y0 - y1 - a0;
+    double a2 = y2 - y0;
+
+    return(
+        a0 * loc.s * s2
+        + a1 * s2
+        + a2 * loc.s
+        + y1);
+}
+
 extern inline void mag_dir_2d(const double x, const double y, double* const r, double* const ux, double* const uy);
 extern inline void mag2_dir_2d(const double x, const double y, double* const r2, double* const ux, double* const uy);
 

@@ -15,6 +15,7 @@ struct interp_loc interp_locate_binary(const double x, const double* const xs, c
 #define interp_locate interp_locate_binary
 
 double interp_eval(const struct interp_loc loc, const double* const ys);
+double interp_eval_cubic(const struct interp_loc loc, const double* const ys);
 
 inline void mag_dir_2d(const double x, const double y, double* const r, double* const ux, double* const uy) {
     *r = sqrt(x*x + y*y);

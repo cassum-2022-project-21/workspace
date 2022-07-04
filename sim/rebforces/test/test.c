@@ -7,9 +7,13 @@
 #include "../common.h"
 #include "../drag_force.h"
 
-double cAU = 14959787070000;
-double cYR = 365.2564 * 86400;
-double cMS = 1.9885e33;
+// double cAU = 14959787070000;
+// double cYR = 365.2564 * 86400;
+// double cMS = 1.9885e33;
+
+double cAU = 1.0;
+double cYR = 1.0;
+double cMS = 1.0;
 
 #define cV cAU / cYR
 #define cE cMS * cAU * cAU / (cYR * cYR)
@@ -26,7 +30,7 @@ void heartbeat(struct reb_simulation *reb_sim) {
         struct reb_particle *p = reb_sim->particles + 1;
         IOPF_drag_force(reb_sim->particles + 1, &diag);
 
-        diag_time=reb_sim->t+5000.0/(1+exp(0.0003*(7500-reb_sim->t)))-476.647;
+        diag_time=reb_sim->t+(reb_sim->t < 2 ? 0.05 : 2000.0);
 
         double E = reb_tools_energy(reb_sim);
         fprintf(stdout, "t=%f, ΔE/Δt=%.5e\n", reb_sim->t, (E-EI)/(reb_sim->t-TI) * cE);
@@ -101,8 +105,8 @@ int main(int argc, char** argv) {
 
     reb_sim->integrator = REB_INTEGRATOR_IAS15;
     reb_sim->G = 4. * IOPF_PI * IOPF_PI;
-    reb_sim->collision = REB_COLLISION_DIRECT;
-    reb_sim->collision_resolve = reb_collision_resolve_merge;
+    // reb_sim->collision = REB_COLLISION_DIRECT;
+    // reb_sim->collision_resolve = reb_collision_resolve_merge;
 
     reb_add_fmt(reb_sim, "m", 1.);               // Central object of 1 solar mass
     reb_add_fmt(reb_sim, "m a e r", 3e-6, 0.25, 0.05, 4.26352e-5); // Planet orbiting at 1 AU, ~1 earth mass, 0 eccentricity

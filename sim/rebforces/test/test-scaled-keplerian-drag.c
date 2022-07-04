@@ -4,76 +4,82 @@
 #include <math.h>
 
 #include "../common.h"
+#include "../forces.h"
+#include "../profiles.h"
+#include "../drag_force.h"
 
-#define SCALE 1.01 /* Super-Keplerian gas */
-// #define SCALE 0.99 /* Sub-Keplerian gas */
+// double cAU = 14959787070000;
+// double cYR = 365.2564 * 86400;
+// double cMS = 1.9885e33;
+
+double cAU = 1.0;
+double cYR = 1.0;
+double cMS = 1.0;
+
+#define cV cAU / cYR
+#define cE cMS * cAU * cAU / (cYR * cYR)
+#define cD cMS / (cAU * cAU * cAU)
+
+double AI;
+double EI;
+double TI = 0.0;
+double diag_time = -1;
 
 void heartbeat(struct reb_simulation *reb_sim) {
-    if (reb_output_check(reb_sim, 1000. * 0.618033989)) {
-        struct reb_particle* p = &reb_sim->particles[1];
-        double r, ux, uy;
-        mag_dir_2d(p->x, p->y, &r, &ux, &uy);
+    if (reb_sim->t > diag_time) {
+        struct IOPF_drag_force_diag diag;
+        struct reb_particle *p = reb_sim->particles + 1;
+        IOPF_drag_force(reb_sim->particles + 1, &diag);
 
-        double v_k = (SCALE * 2 * IOPF_PI) / sqrt(r);
-        double vx_k = -v_k * uy;
-        double vy_k = v_k * ux;
+        diag_time=reb_sim->t+(reb_sim->t < 2 ? 0.00625 : 2000.0);
 
-        double vx_rel = vx_k - p->vx;
-        double vy_rel = vy_k - p->vy;
-        
-        double v_rel2, ux_rel, uy_rel;
-        mag2_dir_2d(vx_rel, vy_rel, &v_rel2, &ux_rel, &uy_rel);
-
-        double a_d = (0.5 * 1e-8 * G_PER_CM3 * v_rel2 * IOPF_PI * p->r * p->r) / p->m;
-
-        fprintf(stdout, "t=%f. Planet: r=%.5f, x=%.5f, y=%.5f, vx=%.5f, vy=%.5f.\n", reb_sim->t, r, p->x, p->y, p->vx, p->vy);
-        fprintf(stdout, "Sub-Keplerian: vx=%.5f, vy=%.5f. Relative: vx=%.5e, vy=%.5e\n", vx_k, vy_k, vx_rel, vy_rel);
-        fprintf(stdout, "Drag acceleration: ax=%.5e, ay=%.5e\n", a_d * ux_rel, a_d * uy_rel);
-        
-        struct reb_orbit orbit = reb_tools_particle_to_orbit(reb_sim->G, reb_sim->particles[0], reb_sim->particles[1]);
-        fprintf(stdout, "Orbit: a=%.5f, e=%.5f\n", orbit.a, orbit.e);
+        double E = reb_tools_energy(reb_sim);
+        fprintf(stdout, "t=%f, ΔE/Δt=%.5e\n", reb_sim->t, (E-EI)/(reb_sim->t-TI) * cE);
+        EI=E;
+        TI=reb_sim->t;
+        fprintf(stdout, "Planet: d=%.5f, x=%.5e, y=%.5e, vx=%.5e, vy=%.5e, v=%.5e.\n", diag.orbit.d, p->x * cAU, p->y * cAU, p->vx * cV, p->vy * cV, diag.orbit.v * cV);
+        fprintf(stdout, "Interpolated: vt_gas=%.5e, vr_gas=%.5e, rho_0=%.5e\n", diag.vt_gas * cV, diag.vr_gas * cV, diag.rho_0 * cD);
+        fprintf(stdout, "Gas: vx=%.5e, vy=%.5e, v=%.5e. Relative: v=%.5e, ux=%.5f, uy=%.5f\n", diag.vx_gas * cV, diag.vy_gas * cV, diag.v_gas * cV, diag.v_rel * cV, diag.ux_rel, diag.uy_rel);
+        fprintf(stdout, "Drag acceleration: a=%.5e, dE/dt=%.5e\n", diag.a_d * cV / cYR, diag.P_d * cE / cYR);
+        fprintf(stdout, "Orbit: a=%.9f, Δa=%.5e, e=%.5f, P=%.5f\n\n", diag.orbit.a, diag.orbit.a-AI, diag.orbit.e, diag.orbit.P);
+        AI = diag.orbit.a;
     }
 }
 
-void sub_keplerian_drag(struct reb_simulation *reb_sim) {
-    struct reb_particle* p = &reb_sim->particles[1];
-    double r, ux, uy;
-    mag_dir_2d(p->x, p->y, &r, &ux, &uy);
+int main(int argc, char** argv) {
+    double SCALE = atof(argv[1]);
 
-    double v_k = (SCALE * 2 * IOPF_PI) / sqrt(r);
-    double vx_k = -v_k * uy;
-    double vy_k = v_k * ux;
+    double* xp = STD_PROF_X; double* vtp = VELOCITY_PROF[0]; double* vrp = VELOCITY_PROF[1]; double* dp = DENSITY_PROF;
+    uint_fast8_t n = 0;
+    for (short i = 0; i < STD_PROF_NMAX; i++) {
+        double x = 0.10 + (0.20 / (STD_PROF_NMAX-1)) * i;
+        *xp++ = x; *vtp++ = (SCALE * 2 * IOPF_PI) / sqrt(x); *vrp++ = 0.0; *dp++ = 5.0e-9 * G_PER_CM3; n++;
+    }
+    STD_PROF_N = n;
+    DRAG_COEFF = 1.0;
 
-    double vx_rel = vx_k - p->vx;
-    double vy_rel = vy_k - p->vy;
-    
-    double v_rel2, ux_rel, uy_rel;
-    mag2_dir_2d(vx_rel, vy_rel, &v_rel2, &ux_rel, &uy_rel);
-
-    double a_d = (0.5 * 1e-8 * G_PER_CM3 * v_rel2 * IOPF_PI * p->r * p->r) / p->m;
-
-    p->ax += a_d * ux_rel;
-    p->ay += a_d * uy_rel;
-}
-
-int main(int argc, char **argv) {
     struct reb_simulation *reb_sim = reb_create_simulation();
 
     reb_sim->integrator = REB_INTEGRATOR_IAS15;
     reb_sim->G = 4. * IOPF_PI * IOPF_PI;
-    reb_sim->collision = REB_COLLISION_DIRECT;
-    reb_sim->collision_resolve = reb_collision_resolve_merge;
+    // reb_sim->collision = REB_COLLISION_DIRECT;
+    // reb_sim->collision_resolve = reb_collision_resolve_merge;
 
     reb_add_fmt(reb_sim, "m", 1.);               // Central object of 1 solar mass
-    reb_add_fmt(reb_sim, "m a e r", 3e-6, 0.1, 0.2, 4.26352e-5); // Planet orbiting at 1 AU, ~1 earth mass, 0 eccentricity
+    reb_add_fmt(reb_sim, "m a e r", 3e-6, 0.25, 0.0, 4.26352e-5); // Planet orbiting at 1 AU, ~1 earth mass, 0 eccentricity
 
     reb_sim->heartbeat = heartbeat;
-    reb_sim->additional_forces = sub_keplerian_drag;
+    reb_sim->additional_forces = IOPF_drag_all;
     reb_sim->force_is_velocity_dependent = 1;
 
     reb_move_to_com(reb_sim);
 
-    reb_integrate(reb_sim, INFINITY);
+    EI=reb_tools_energy(reb_sim);
+    struct reb_particle com = reb_get_com(reb_sim);
+    struct reb_orbit orbit = reb_tools_particle_to_orbit(reb_sim->G, reb_sim->particles[1], com);
+    AI=orbit.a;
+
+    reb_integrate(reb_sim, 2);
 
     reb_free_simulation(reb_sim);
 }

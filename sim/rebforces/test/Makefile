@@ -6,4 +6,4 @@ LDLIBS = -lrebound -lrebcforces -lm
 
 .PHONY: clean
 clean:
-	rm -rf *.o test test-keplerian-no-drag test-sub-keplerian-drag
+	rm -rf *.o test test-keplerian-no-drag test-scaled-keplerian-drag

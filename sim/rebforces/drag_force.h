@@ -25,6 +25,6 @@ struct IOPF_drag_force_diag {
     double P_d; // Power of the drag force
 };
 
-void IOPF_drag_force(struct reb_particle* const p, struct IOPF_drag_force_diag* diag);
+void IOPF_drag_force(struct reb_particle* const p, struct reb_particle* const sun, struct IOPF_drag_force_diag* diag);
 
 #endif

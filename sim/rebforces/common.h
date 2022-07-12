@@ -12,7 +12,7 @@ struct interp_loc {
 struct interp_loc interp_locate_linear(const double x, const double* const xs, const uint_fast8_t N);
 struct interp_loc interp_locate_binary(const double x, const double* const xs, const uint_fast8_t N);
 
-#define interp_locate interp_locate_binary
+#define interp_locate interp_locate_linear
 
 double interp_eval(const struct interp_loc loc, const double* const ys);
 double interp_eval_cubic(const struct interp_loc loc, const double* const ys);

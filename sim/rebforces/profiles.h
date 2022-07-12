@@ -3,7 +3,7 @@
 
 #include <inttypes.h>
 
-#define STD_PROF_NMAX __UINT_FAST8_MAX__ /* The maximum profile length we accept */
+#define STD_PROF_NMAX __UINT_FAST8_MAX__ + 1 /* The maximum profile length we accept */
 
 extern uint_fast8_t STD_PROF_N; /* The actual length of the profiles loaded (user-defined) */
 

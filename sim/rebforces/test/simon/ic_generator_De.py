@@ -6,16 +6,18 @@ from random import sample
 
 def generate_ic_single():
     parameter_space = {
-        "m": [0.01, 0.1, 1.0],
-        "a": [0.2, 0.24],
-        "e": [0, 0.02, 0.1],
-        "C_D": [1.0],
+        "m": [f"{k:.1f}" for k in np.linspace(-3, 0, 11)],
+        "a": 0.30,
+        "e": list(np.linspace(0, 0.1, 11)),
+        "C_D": 1.0,
+        "eta": 0.002,
+        "t_end": 10000.0
     }
 
     # templates
     code_name = "IOPFCSimulation"
     executable_path = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "../test"
+        os.path.dirname(os.path.abspath(__file__)), "../test-scaled-keplerian-drag"
     )
     start_cmd_template = "rm -f DONE ; {executable_path} {args} 1>>output.txt 2>>error.txt"
     restart_cmd_template = "touch restart.txt ; {executable_path} {args} 1>>output.txt 2>>error.txt"

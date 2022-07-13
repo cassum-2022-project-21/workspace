@@ -1,10 +1,10 @@
-INCLUDES = -I../../src/rebound/src
+INCLUDES = -isystem ../../src/rebound/src
 # CFLAGS = -g -std=c99 -fPIC -O0 -Wall $(INCLUDES)
-CFLAGS   = -g -std=c99 -fPIC -O3 -march=native -fno-math-errno -freciprocal-math -fno-trapping-math -fno-signaling-nans -Wall $(INCLUDES)
+CFLAGS   = -g -std=c99 -fPIC -O3 -march=native -fno-math-errno -freciprocal-math -fno-trapping-math -fno-signaling-nans -Wpedantic $(INCLUDES)
 # CFLAGS = -g -std=c99 -fPIC -Wall $(INCLUDES)
 
-LDFLAGS = -shared	
-# LDLIBS = -lrebound
+LDFLAGS = -shared -L../../src/rebound
+LDLIBS = -lrebound
 
 BUILD_DIR := ./build
 

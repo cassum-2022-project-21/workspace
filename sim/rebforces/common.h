@@ -5,12 +5,12 @@
 
 struct interp_loc {
     double s;
-    uint_fast8_t idx;
+    unsigned int idx;
 };
 
 // locate_* require x to be sorted increasing
-struct interp_loc interp_locate_linear(const double x, const double* const xs, const uint_fast8_t N);
-struct interp_loc interp_locate_binary(const double x, const double* const xs, const uint_fast8_t N);
+struct interp_loc interp_locate_linear(const double x, const double* const xs, const unsigned int N);
+struct interp_loc interp_locate_binary(const double x, const double* const xs, const unsigned int N);
 
 #define interp_locate interp_locate_linear
 

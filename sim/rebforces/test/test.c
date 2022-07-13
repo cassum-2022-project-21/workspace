@@ -52,8 +52,13 @@ void heartbeat(struct reb_simulation *reb_sim) {
 }
 
 int main(int argc, char** argv) {
+    if (argc < 5) {
+        fprintf(stderr, "Usage: %s <m> <a> <e> <C_D>\n", argv[0]);
+        exit(1);
+    }
+
     double* xp = STD_PROF_X; double* vtp = VELOCITY_PROF[0]; double* vrp = VELOCITY_PROF[1]; double* dp = DENSITY_PROF;
-    uint_fast8_t n = 0;
+    unsigned int n = 0;
     *xp++ = 2.000000e-02; *vtp++ = 2.107132e+07 * CM_PER_S; *vrp++ = 2.246802e+03 * CM_PER_S; *dp++ = 1.620334e-09 * G_PER_CM3; n++;
     *xp++ = 2.058000e-02; *vtp++ = 2.077247e+07 * CM_PER_S; *vrp++ = 2.114639e+03 * CM_PER_S; *dp++ = 1.599020e-09 * G_PER_CM3; n++;
     *xp++ = 2.117600e-02; *vtp++ = 2.047768e+07 * CM_PER_S; *vrp++ = 1.994472e+03 * CM_PER_S; *dp++ = 1.576198e-09 * G_PER_CM3; n++;
@@ -327,6 +332,8 @@ int main(int argc, char** argv) {
 
     reb_free_simulation(reb_sim);
 
-    FILE* DONE = fopen("DONE", "w");
-    fclose(DONE);
+    if (reb_sim->status == REB_EXIT_SUCCESS) {
+        FILE* DONE = fopen("DONE", "w");
+        fclose(DONE);
+    }
 }

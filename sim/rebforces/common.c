@@ -3,8 +3,8 @@
 
 #include "common.h"
 
-struct interp_loc interp_locate_linear(const double x, const double* const xs, const uint_fast8_t N) {
-    uint_fast8_t i;
+struct interp_loc interp_locate_linear(const double x, const double* const xs, const unsigned int N) {
+    unsigned int i;
     for (i = 1; i < N; i++) {
         if (x < xs[i]) {
             return (struct interp_loc){ (x - xs[i-1])/(xs[i] - xs[i-1]), i-1 };
@@ -13,12 +13,12 @@ struct interp_loc interp_locate_linear(const double x, const double* const xs, c
     return (struct interp_loc){ NAN, N };
 }
 
-struct interp_loc interp_locate_binary(const double x, const double* const xs, const uint_fast8_t N) {
-    uint_fast8_t begin = 0;
-    uint_fast8_t end = N;
+struct interp_loc interp_locate_binary(const double x, const double* const xs, const unsigned int N) {
+    unsigned int begin = 0;
+    unsigned int end = N;
 
     while (begin < end) {
-        uint_fast8_t mid = (begin + end) / 2;
+        unsigned int mid = (begin + end) / 2;
         if (xs[mid] >= x) {
             end = mid;
         } else {

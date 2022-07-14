@@ -1,5 +1,7 @@
 #include <rebound.h>
 #include <math.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 #include "common.h"
 #include "drag_force.h"
@@ -12,10 +14,19 @@ void IOPF_drag_force(struct reb_particle* const p, struct reb_particle* sun, str
     mag_dir_2d(p->x - sun->x, p->y - sun->y, &d, &ux, &uy);
 
     struct interp_loc iloc = interp_locate(d, STD_PROF_X, STD_PROF_N);
+    if (isinf(iloc.s)) {
+        printf("Error locating particle at d=%f", d);
+        exit(200);
+    }
 
     double vt_gas = interp_eval_cubic(iloc, VELOCITY_PROF[0]);
     double vr_gas = interp_eval_cubic(iloc, VELOCITY_PROF[1]);
     double rho_0 = interp_eval_cubic(iloc, DENSITY_PROF);
+
+    if (isnan(vt_gas) || isnan(vr_gas) || isnan(rho_0)) {
+        printf("Error interpolating particle at d=%f", d);
+        exit(201);
+    }
 
     // double vt_gas = 0.99 * 2 * IOPF_PI / sqrt(d);
     // double vr_gas = 0.0;

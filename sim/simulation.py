@@ -168,8 +168,7 @@ class Simulation(object):
 
     def add_drag_force(self):
         if self.args.C_d != 0.0:
-            import c_forces
-
+            pass
             # C_d = self.args.C_d
 
             # r, vt_gas_cms, vr_gas_cms = np.loadtxt(self.args.velocity_file).T
@@ -306,7 +305,7 @@ class Simulation(object):
 
     @property
     def dt(self):
-        return max(np.around(self.t_store / 5), 1)
+        return self.args.store_dt
 
 if __name__ == "__main__":
     import signal

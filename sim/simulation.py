@@ -25,7 +25,7 @@ class Simulation(object):
         self.pa_beta_f = None
         self.reb_continue = False
 
-    def parse_arguments(self):
+    def parse_arguments(self, override=None):
         parser = argparse.ArgumentParser()
         parser.add_argument('-s', '--random-seed', dest='seed', type=int, default=0, help='random seed')
         parser.add_argument('-t', '--t_end', dest='t_end', type=float, default=10.0, help='Termination time')
@@ -57,7 +57,11 @@ class Simulation(object):
         parser.add_argument('--velocity-file', nargs="?", dest="velocity_file", type=str, const="velocity.txt", default=None)
         parser.add_argument('--density-file', nargs="?", dest="density_file", type=str, const="density.txt", default=None)
 
-        self.args = parser.parse_args()
+        if override is None:
+            self.args = parser.parse_args()
+        else:
+            self.args = parser.parse_args(override)
+
         n, d = self.args.pa_beta.split("_")
         self.pa_beta_f = float(n) / float(d)
 

@@ -73,7 +73,12 @@ int main(int argc, char** argv) {
     // reb_sim->collision_resolve = reb_collision_resolve_merge;
 
     reb_add_fmt(reb_sim, "m", 1.);               // Central object of 1 solar mass
-    reb_add_fmt(reb_sim, "m a e r", 3e-6 * pow(10, atof(argv[1])), atof(argv[2]), atof(argv[3]), 4.26352e-5);
+
+    double m = 3e-6 * atof(argv[1]);
+    double rho_p = 3.0 * G_PER_CM3;
+    double r = cbrt(m * 3 / (rho_p * 4 * IOPF_PI));
+
+    reb_add_fmt(reb_sim, "m a e r", m, atof(argv[2]), atof(argv[3]), r);
 
     reb_sim->heartbeat = heartbeat;
     reb_sim->additional_forces = IOPF_drag_all;
@@ -86,10 +91,12 @@ int main(int argc, char** argv) {
     eI = orbit.e;
     EI=reb_tools_energy(reb_sim);
 
-    reb_integrate(reb_sim, atof(argv[6]));
+    reb_integrate(reb_sim, 1e5);
 
     reb_free_simulation(reb_sim);
 
-    FILE* DONE = fopen("DONE", "w");
-    fclose(DONE);
+    if (reb_sim->status == REB_EXIT_SUCCESS) {
+        FILE* DONE = fopen("DONE", "w");
+        fclose(DONE);
+    }
 }

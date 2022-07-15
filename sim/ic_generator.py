@@ -5,7 +5,7 @@ from itertools import product
 from random import sample
 
 def gen_seeds():
-    return [38394, 47220, 61392, 62232, 69762, 812, 83482, 85197, 87199, 92809, 25452, 4901, 75344, 52174, 11564, 2929, 45297, 61949, 58910, 14175]
+    return [47220, 61392, 92718, 29381]
 
 def generate_ic():
     # parameter_space = {
@@ -35,25 +35,21 @@ def generate_ic():
     # }
 
     parameter_space = {
-        "random-seed": [0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000],
-        "t_end": 200000.0,
-        "N_end": 2,
-        "N_enddelay": 2000.0,
-        "store-dt": 1.0,
-        "n-particles": 2,
+        "random-seed": gen_seeds(),
+        "t_end": 1000000.0,
+        "store-dt": 100.0,
+        "n-particles": 100,
         "alpha": -2,
         "code-name": "rebound",
         "rebound-archive": "rebound_archive.bin",
         ("pa-rate", "pa-beta"): (0.0, None),
 
         "m-total": 1.0,
-        "a-in": 0.23,
+        "a-in": 0.22,
         "a-out": 0.24,
-        "std-e": 0.1,
+        "rho": 3.0,
 
-        "drag-coefficient": [0.0, 1.0],
-        "velocity-file": "/home/alchzh/cassum-2022-project-21/workspace/disk/velocity.txt",
-        "density-file": "/home/alchzh/cassum-2022-project-21/workspace/disk/midplane_density_2.txt"
+        "drag-coefficient": [0.0, 1.0]
     }
 
     # templates
@@ -64,7 +60,7 @@ def generate_ic():
     start_cmd_template = "rm -f DONE ; python -u {executable_path} {args} 1>>output.txt 2>>error.txt"
     restart_cmd_template = "rm -f DONE ; touch restart.txt ; python -u {executable_path} {args} 1>>output.txt 2>>error.txt"
     stop_cmd = "touch STOP"
-    output_dir_template = "iopf_sim_DRAG_{drag_coefficient}__ALPHA_{alpha}_BETA_{pa_beta}_{random_seed}"
+    output_dir_template = "iopf_sim_DRAG_{drag_coefficient}_N_{n_particles}_{random_seed}"
 
     # IC generator
     ic = InitialConditionGenerator(conf_file="SiMon.conf")

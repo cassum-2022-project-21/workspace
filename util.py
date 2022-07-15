@@ -1,6 +1,7 @@
 from collections import namedtuple
 import matplotlib.pyplot as plt
 from pathlib import Path
+import re
 
 def prop_table(objs, prop_cycle=None):
     """Returns a table for an ordered collection based on prop cycle"""
@@ -29,3 +30,5 @@ def read_params(name):
 def find_all_simulations(dir):
     p = Path(dir)
     return { read_params(h5path.parts[len(p.parts)]): h5path for h5path in p.glob("iopf_sim_*/**/*.h5") }
+
+NUMBER_REGEX = re.compile(r"\-?(?:[0-9]+\.)?[0-9]+(?:e[\+-][0-9]{2})?")

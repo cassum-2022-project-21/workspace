@@ -1,22 +1,20 @@
 # %%
 import simulation
 import rebforces
-from ctypes import byref
-
 # %%
 sim = simulation.Simulation()
 
 # %%
 sim.parse_arguments(
     [
-        "-t", "10.0",
-        "-d", "0.5",
-        "-n", "1",
+        "-t", "10000.0",
+        "-d", "100.0",
+        "-n", "100",
         "-c", "rebound",
-        "--a-in", "0.26",
-        "--a-out", "0.26",
-        "--std-i", "0",
-        "--std-e", "0.05",
+        "--a-in", "0.22",
+        "--a-out", "0.24",
+        "--std-i", "0.01",
+        "--std-e", "0.02",
         "-m", "1.0",
         "--rho", "3.0",
         "--no-continue"
@@ -41,8 +39,8 @@ profile = np.load(profile_root / profile_name / "all_variables.npz")
 rebforces.set_profiles(
     len(profile["r"]),
     profile["r"],
-    profile["velocity"].T,
-    profile["rho_0"],
+    profile["velocity"].T * rebforces.CM_PER_S,
+    profile["rho_0"] * rebforces.G_PER_CM3,
     profile["C_D"]
 )
 

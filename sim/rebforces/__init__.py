@@ -63,6 +63,9 @@ VELOCITY_PROF = ((c_double * __STD_PROF_NMAX__) * 2).in_dll(librebcforces, "VELO
 DENSITY_PROF = (c_double * __STD_PROF_NMAX__).in_dll(librebcforces, "DENSITY_PROF")
 DRAG_COEFF = c_double.in_dll(librebcforces, "DRAG_COEFF")
 
+CM_PER_S = c_double.in_dll(librebcforces, "CM_PER_S")
+G_PER_CM3 = c_double.in_dll(librebcforces, "G_PER_CM3")
+
 def copy_np_to_c(np_arr, dest, n):
     if np_arr.ndim != 1: # Doesn't support converting numpy 2D array to C 2D array yet
         raise NotImplementedError("Arrays with greater than 1 dimension are not supported")

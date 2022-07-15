@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import argparse
 import os
 from scipy.interpolate import interp1d
+import time
 
 def mag_dir_2d(x, y):
     r = np.sqrt(x*x + y*y)
@@ -168,7 +169,21 @@ class Simulation(object):
 
     def add_drag_force(self):
         if self.args.C_d != 0.0:
-            pass
+            import rebforces
+            from pathlib import Path
+
+            profile_root = Path(__file__).parent / "../disk/calculated_profiles/"
+            profile_name = "20220714_1"
+            profile = np.load(profile_root / profile_name / "all_variables.npz")
+
+            rebforces.set_profiles(
+                len(profile["r"]),
+                profile["r"],
+                profile["velocity"].T * rebforces.CM_PER_S,
+                profile["rho_0"] * rebforces.G_PER_CM3,
+                self.args.C_d
+            )
+
             # C_d = self.args.C_d
 
             # r, vt_gas_cms, vr_gas_cms = np.loadtxt(self.args.velocity_file).T
@@ -200,9 +215,8 @@ class Simulation(object):
             #         p.ax += F_d * ux_rel / p.m
             #         p.ay += F_d * uy_rel / p.m
 
-            # self.drag_force = drag_force
-            # self.sim.additional_forces = drag_force
-            # self.sim.force_is_velocity_dependent = 1
+            self.sim.additional_forces = rebforces.IOPF_drag_all
+            self.sim.force_is_velocity_dependent = 1
 
 
     def store_hdf5_rebound(self, energy):
@@ -256,11 +270,14 @@ class Simulation(object):
                 self.sim.particles[i].m += (m_i2[i]/mtot*pa_rate)
 
     def evolve_model(self):
+        self.sim.exact_finish_time = 0
         print('Start integration...')
+        self.evolve_start_t = time.time()
+
         if self.args.code == 'abie':
             self.sim.integrate(self.args.t_end)
         else:
-            print('t = %f, N = %d' % (self.sim.t, self.sim.N))
+            print('t = %f, N = %d, sysT = %f' % (self.sim.t, self.sim.N, time.time() - self.evolve_start_t))
             e_init = self.sim.calculate_energy()
             self.store_hdf5_rebound(e_init)
             self.t_store = self.sim.t
@@ -269,19 +286,20 @@ class Simulation(object):
                     try:
                         self.sim.integrate(self.t_store+self.dt)
                         self.pebble_accretion()
+                        self.sim.move_to_com()
                     except rebound.Collision as error:
                         print('A collision occurred', error)
                         # store state in the event of collision
                         e = self.sim.calculate_energy()
                         de = abs((e-e_init)/e_init)
-                        print('t = %f, N = %d, dE/E = %e' % (self.sim.t, self.sim.N, de))
+                        print('t = %f, N = %d, sysT = %f, dE/E = %e' % (self.sim.t, self.sim.N, time.time() - self.evolve_start_t, de))
                         self.store_hdf5_rebound(e)
                         # update early stopping condition
                         self.reset_early_stop()
-                self.t_store += self.dt
+                self.t_store = self.sim.t
                 e = self.sim.calculate_energy()
                 de = abs((e-e_init)/e_init)
-                print('t = %f, N = %d, dE/E = %e' % (self.sim.t, self.sim.N, de))
+                print('t = %f, N = %d, sysT = %f, dE/E = %e' % (self.sim.t, self.sim.N, time.time() - self.evolve_start_t, de))
                 self.store_hdf5_rebound(e)
 
     def finalize(self):
@@ -326,6 +344,8 @@ if __name__ == "__main__":
         sys.exit(1)
 
     signal.signal(signal.SIGINT, interrupt_handler)
+
+    sim.evolve_model()
 
     try:
         sim.save()

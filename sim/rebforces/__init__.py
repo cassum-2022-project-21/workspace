@@ -30,9 +30,23 @@ IOPF_drag_force = librebcforces.IOPF_drag_force
 IOPF_drag_force.argtypes = [POINTER(rebound.Particle), POINTER(rebound.Particle), POINTER(IOPFDragForceDiag)]
 IOPF_drag_force.restype = None
 
+IOPF_torque_force = librebcforces.IOPF_torque_force
+IOPF_torque_force.argtypes = [POINTER(rebound.Particle), POINTER(rebound.Particle)]
+IOPF_torque_force.restype = None
+
+
 IOPF_drag_all = librebcforces.IOPF_drag_all
 IOPF_drag_all.argtypes = [POINTER(rebound.Simulation)]
 IOPF_drag_all.restype = None
+
+IOPF_torque_all = librebcforces.IOPF_torque_all
+IOPF_torque_all.argtypes = [POINTER(rebound.Simulation)]
+IOPF_torque_all.restype = None
+
+IOPF_drag_torque_all = librebcforces.IOPF_drag_torque_all
+IOPF_drag_torque_all.argtypes = [POINTER(rebound.Simulation)]
+IOPF_drag_torque_all.restype = None
+
 
 class InterpLoc(Structure):
     _fields_ = [
@@ -62,6 +76,10 @@ STD_PROF_X = (c_double * __STD_PROF_NMAX__).in_dll(librebcforces, "STD_PROF_X")
 VELOCITY_PROF = ((c_double * __STD_PROF_NMAX__) * 2).in_dll(librebcforces, "VELOCITY_PROF")
 DENSITY_PROF = (c_double * __STD_PROF_NMAX__).in_dll(librebcforces, "DENSITY_PROF")
 DRAG_COEFF = c_double.in_dll(librebcforces, "DRAG_COEFF")
+SURFACE_DENSITY_PROF = (c_double * __STD_PROF_NMAX__).in_dll(librebcforces, "SURFACE_DENSITY_PROF")
+SCALE_HEIGHT_PROF = (c_double * __STD_PROF_NMAX__).in_dll(librebcforces, "SCALE_HEIGHT_PROF")
+TORQUE_PROF = (c_double * __STD_PROF_NMAX__).in_dll(librebcforces, "TORQUE_PROF")
+
 
 CM_PER_S = c_double.in_dll(librebcforces, "CM_PER_S")
 G_PER_CM3 = c_double.in_dll(librebcforces, "G_PER_CM3")

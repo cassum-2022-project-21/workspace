@@ -85,5 +85,49 @@ eta = 1 - np.square(vt_gas / v_K)
 eta_adachi = eta / 2
 v_rp = (-eta * v_K)[:, np.newaxis] / (tau + 1. / tau)
 
+fa = 0.225
+fc = 50
+fm = 0.03
+fk = 640
+fb = 1
+fsr = fk * (r - fa)
+torque = -fb * fsr / (fsr * fsr + fc + fm) 
+
 if _should_save:
+    from matplotlib.rcsetup import cycler
+    import matplotlib.pyplot as plt
+
+    l = np.logical_and(r > 0.15, r < 0.35)
+
+    plt.rc('axes', prop_cycle=(cycler(marker=['o'], ms=[4])))
+
+    fig, _axs = plt.subplots(2, 3, figsize=(20, 8))
+    axs = np.ravel(_axs)
+
+    axs[0].plot(r[l], torque[l])
+    axs[0].set_ylabel("Torque [$\Gamma_0$]")
+
+    axs[1].plot(r[l], (H/r_cm)[l])
+    axs[1].set_ylim(0, 0.05)
+    axs[1].set_ylabel("$h/r$")
+
+    axs[2].plot(r[l], alpha[l])
+    axs[2].set_yscale("log")
+    axs[2].set_ylim(1e-5, 1e-2)
+    axs[2].set_ylabel("$\\alpha$")
+
+    axs[4].plot(r[l], sigma[l])
+    axs[4].set_ylabel("$\\Sigma$ [g / cm$^2$]")
+
+    axs[3].hlines(0, 0.15, 0.35, linestyles="--", color="black")
+    axs[3].plot(r[l], eta[l])
+    axs[3].set_ylim(-0.003, 0.003)
+    axs[3].set_ylabel("$\\eta$")
+    # axs[3].yaxis.set_major_formatter(tickformat)
+
+    axs[5].plot(r[l], rho_0[l])
+    axs[5].set_ylabel("$\\rho_{g,0}$ [g / cm$^3$]")
+
+    plt.savefig(_output_dir / "disk.png")
+
     np.savez_compressed(_output_dir / "all_variables", **{ k: v for k, v in locals().items() if not k.startswith("_") and isinstance(v, np.ndarray) or isinstance(v, numbers.Number) })

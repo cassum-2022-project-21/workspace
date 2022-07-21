@@ -75,7 +75,7 @@ class Simulation(object):
 
         parser.add_argument('--rebound-archive', dest='rebound_archive', type=str, default=None, help='A rebound archive to save to / read from (with --continue)')
         parser.add_argument('--no-continue', dest='reb_no_continue', action='store_true', help="Prevent continuing from a rebound snapshot archive")
-        parser.add_argument('--continue-from', dest='reb_continue_from', type=float, default=-1.0, help="Time to continue from")
+        parser.add_argument('--continue-from', dest='reb_continue_from', type=float, default=50000.0, help="Time to continue from")
 
         parser.add_argument('-C', '--drag-coefficient', dest="C_d", type=float, default=0.0, help="The drag coefficient C_d")
         parser.add_argument('--velocity-file', nargs="?", dest="velocity_file", type=str, const="velocity.txt", default=None)
@@ -94,6 +94,8 @@ class Simulation(object):
         if self.args.rebound_archive is None:
             self.args.rebound_archive = f"rebound_archive_{self.args.seed}.bin"
 
+        self.rebound_archive_out = "mercurius_" + self.args.rebound_archive
+
     def init(self):
         self.print('Using rebound as the integrator...')
         if not self.args.reb_no_continue and os.path.isfile(self.args.rebound_archive):
@@ -105,8 +107,19 @@ class Simulation(object):
             self.sim = archive.getSimulation(self.args.reb_continue_from if self.args.reb_continue_from >= 0.0 else archive.tmax)
         else:
             self.sim = rebound.Simulation()
-        self.sim.integrator = 'IAS15'
-        self.sim.G = 4 * np.pi ** 2.0  # AU/MSun/yr
+
+        self.sim.integrator = 'mercurius'
+
+        self.sim.dt = 0.001
+
+        self.sim.ri_mercurius.hillfac = 5
+        self.sim.ri_mercurius.safe_mode = False
+
+        self.sim.ri_ias15.min_dt = 0
+
+        self.sim.ri_whfast.safe_mode = False
+        self.sim.ri_whfast.coordinates = "democraticheliocentric"
+
         self.sim.collision = 'direct'
         self.sim.collision_resolve = 'merge'
 
@@ -186,12 +199,15 @@ class Simulation(object):
             rebforces.DRAG_COEFF.value = self.args.C_d
             
             if self.args.migration_torque:
+                self.print("Enabling migration torque and drag force")
                 self.sim.additional_forces = rebforces.IOPF_drag_torque_all
             else:
-                self.sim.addition_forces = rebforces.IOPF_drag_force_all
+                self.print("Enabling drag force")
+                self.sim.additional_forces = rebforces.IOPF_drag_all
             
             self.sim.force_is_velocity_dependent = 1
         elif self.args.migration_torque:
+            self.print("Enabling migration torque")
             self.sim.additional_forces = rebforces.IOPF_torque_all
             self.sim.force_is_velocity_dependent = 1
 
@@ -228,7 +244,7 @@ class Simulation(object):
 
 
     def store_hdf5_rebound(self, energy):
-        self.sim.simulationarchive_snapshot(self.args.rebound_archive)
+        self.sim.simulationarchive_snapshot(self.rebound_archive_out)
 
         if self.sim.N < self.buffer_rebound.buf_x.shape[1]:
             self.buffer_rebound.flush()

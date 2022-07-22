@@ -91,7 +91,7 @@ fm = 0.03
 fk = 640
 fb = 1
 fsr = fk * (r - fa)
-torque = -fb * fsr / (fsr * fsr + fc + fm) 
+torque = -fb * fsr / (fsr * fsr + fc) + fm 
 
 if _should_save:
     from matplotlib.rcsetup import cycler

@@ -131,7 +131,7 @@ class Simulation(object):
     def ic_generate(self):
         if self.reb_continue:
             raise RuntimeError("Generating ICs when continuing in rebound is prohibited. Use ic_continue() instead.")
-    
+
         np.random.seed(self.args.seed)
         # alpha = 0: random and uniform distribution of mass; alpha < 0: power-law IMF; alpha = None: equal-mass
         if self.args.alpha is None:

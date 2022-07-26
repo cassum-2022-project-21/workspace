@@ -4,19 +4,25 @@ from SiMon.ic_generator import InitialConditionGenerator
 from itertools import product
 from random import sample
 
-def gen_seeds():
-    return [47220, 61392, 92718, 29381]
+k = sample(range(100000), 10)
 
 def generate_ic():
     parameter_space = {
-        "random-seed": gen_seeds,
-        "t_end": 1000000.0,
+        "random-seed": k,
+        "t_end": 30000.0,
         "store-dt": 100.0,
         "n-particles": 100,
         "code-name": "rebound",
         "alpha": -2,
         # "rebound-archive": "rebound_archive.bin",
-        ("pa-rate", "pa-beta"): [(0.0, None), (1e-11, "2_3")]
+        ("pa-rate", "pa-beta"): [(0.0, None)],
+        "drag-coefficient": 1.0,
+        "migration-torque": "",
+
+        "m-total": 1.0,
+
+        ("a-in", "a-out", "std-e", "std-i"): [(0.22, 0.24, 0.02, 0.01), (0.229, 0.231, 0.02, 0.0)],
+        "rho": 3.0
     }
 
     # parameter_space = {
@@ -58,8 +64,8 @@ def generate_ic():
     start_cmd_template = "rm -f DONE ; python -u {executable_path} {args} 1>>output.txt 2>>error.txt"
     restart_cmd_template = "rm -f DONE ; touch restart.txt ; python -u {executable_path} {args} 1>>output.txt 2>>error.txt"
     stop_cmd = "touch STOP"
-    # output_dir_template = "iopf_sim_DRAG_{drag_coefficient}_N_{n_particles}_{random_seed}"
-    output_dir_template = "iopf_old_sim_NODRAG_BETA_{pa_beta}_N_{n_particles}_{random_seed}"
+    output_dir_template = "iopf_sim_i_{std_i}_{random_seed}"
+    # output_dir_template = "iopf_old_sim_NODRAG_BETA_{pa_beta}_N_{n_particles}_{random_seed}"
 
 
     # IC generator

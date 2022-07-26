@@ -186,12 +186,15 @@ class Simulation(object):
             rebforces.DRAG_COEFF.value = self.args.C_d
             
             if self.args.migration_torque:
+                self.print("Enabling migration torque and drag force")
                 self.sim.additional_forces = rebforces.IOPF_drag_torque_all
             else:
-                self.sim.addition_forces = rebforces.IOPF_drag_force_all
+                self.print("Enabling drag force")
+                self.sim.additional_forces = rebforces.IOPF_drag_all
             
             self.sim.force_is_velocity_dependent = 1
         elif self.args.migration_torque:
+            self.print("Enabling migration torque")
             self.sim.additional_forces = rebforces.IOPF_torque_all
             self.sim.force_is_velocity_dependent = 1
 

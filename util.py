@@ -32,3 +32,26 @@ def find_all_simulations(dir):
     return { read_params(h5path.parts[len(p.parts)]): h5path for h5path in p.glob("iopf_sim_*/**/*.h5") }
 
 NUMBER_REGEX = re.compile(r"\-?(?:[0-9]+\.)?[0-9]+(?:e[\+-][0-9]{2})?")
+
+def new_load_simulation(paths, dest=None, prefix=""):
+    if dest is None:
+        dest = {}
+
+    for sim_path in paths:
+        label = sim_path.name
+        slabel = label.split("_")
+        drag_coefficient = int(slabel[slabel.index('DRAG')+1][0])
+        n_particles = int(slabel[slabel.index('N')+1])
+        seed = int(slabel[-1])
+
+        label = prefix + label
+        dest[label] = {
+            "label": label,
+            "drag_coefficient": drag_coefficient,
+            "n_particles": n_particles,
+            "seed": seed,
+            "path": sim_path,
+            # "runtimes": np.array(L)
+        }
+
+    return dest

@@ -63,7 +63,7 @@ void IOPF_torque_force(struct reb_particle* const p, struct reb_particle* primar
     torque = interp_eval(iloc, TORQUE_PROF);
 
     Omegasquared = mu / (a*a*a);
-    Gamma_r = p->m * a*a * Omegasquared * Sigma / (hR*hR);
+    Gamma_r = p->m * a*a*a*a * Omegasquared * Sigma / (hR*hR);
 
 
     p->ax += dvx * torque * Gamma_r / h;

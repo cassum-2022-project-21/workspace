@@ -55,3 +55,35 @@ def new_load_simulation(paths, dest=None, prefix=""):
         }
 
     return dest
+
+def new_load_simulation_20220725(paths, dest=None, prefix=""):
+    if dest is None:
+        dest = {}
+
+    for sim_path in paths:
+        label = sim_path.name
+        slabel = label.split("_")
+        drag_coefficient = 1
+        n_particles = 100
+        seed = int(slabel[-1])
+
+        if "0.24" in slabel or ("0.01" in slabel and "a" not in slabel):
+            width = 0.02
+        else:
+            width = 0.002
+
+        inc = float(slabel[3])
+
+        label = prefix + label
+        dest[label] = {
+            "label": label,
+            "drag_coefficient": drag_coefficient,
+            "n_particles": n_particles,
+            "seed": seed,
+            "path": sim_path,
+            "inc": inc,
+            "width": width
+            # "runtimes": np.array(L)
+        }
+
+    return dest

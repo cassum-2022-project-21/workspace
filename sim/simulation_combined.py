@@ -14,7 +14,6 @@ from scipy.interpolate import interp1d
 import time
 from pathlib import Path
 import rebforces
-import shutil
 
 def mag_dir_2d(x, y):
     r = np.sqrt(x*x + y*y)
@@ -76,13 +75,15 @@ class Simulation(object):
 
         parser.add_argument('--rebound-archive', dest='rebound_archive', type=str, default=None, help='A rebound archive to save to / read from (with --continue)')
         parser.add_argument('--no-continue', dest='reb_no_continue', action='store_true', help="Prevent continuing from a rebound snapshot archive")
-        parser.add_argument('--continue-from', dest='reb_continue_from', type=float, default=50000.0, help="Time to continue from")
+        parser.add_argument('--continue-from', dest='reb_continue_from', type=float, default=-1.0, help="Time to continue from")
 
         parser.add_argument('-C', '--drag-coefficient', dest="C_d", type=float, default=0.0, help="The drag coefficient C_d")
         parser.add_argument('--velocity-file', nargs="?", dest="velocity_file", type=str, const="velocity.txt", default=None)
         parser.add_argument('--density-file', nargs="?", dest="density_file", type=str, const="density.txt", default=None)
 
         parser.add_argument('--migration-torque', dest='migration_torque', action='store_true', help="Add a migration torque force")
+
+        parser.add_argument('--N_handoff', dest='N_handoff', type=int, default=-1, help="Switch to mercurius integrator")
 
         if override is None:
             self.args = parser.parse_args()
@@ -95,21 +96,28 @@ class Simulation(object):
         if self.args.rebound_archive is None:
             self.args.rebound_archive = f"rebound_archive_{self.args.seed}.bin"
 
-        self.rebound_archive_out = self.args.rebound_archive
-
     def init(self):
         self.print('Using rebound as the integrator...')
         if not self.args.reb_no_continue and os.path.isfile(self.args.rebound_archive):
-            shutil.copyfile(self.args.rebound_archive, self.args.rebound_archive + ".bak")
             self.print('Able to continue from rebound archive', self.args.rebound_archive)
             self.reb_continue = True
 
         if self.reb_continue:
             archive = rebound.SimulationArchive(self.args.rebound_archive)
-            self.sim = archive.getSimulation(min((self.args.reb_continue_from, archive.tmax)) if self.args.reb_continue_from >= 0.0 else archive.tmax)
+            self.sim = archive.getSimulation(self.args.reb_continue_from if self.args.reb_continue_from >= 0.0 else archive.tmax)
         else:
             self.sim = rebound.Simulation()
+        self.sim.integrator = 'IAS15'
+        self.sim.G = 4 * np.pi ** 2.0  # AU/MSun/yr
+        self.sim.collision = 'direct'
+        self.sim.collision_resolve = 'merge'
 
+        if self.io:
+            self.buffer_rebound = DataIO(output_file_name='data_reb_%d.h5' % self.args.seed, CONST_G=self.sim.G, append=True)
+
+        self.print(self.args)
+
+    def init_mercurius(self):
         self.sim.integrator = 'mercurius'
 
         self.sim.dt = 0.001
@@ -125,15 +133,11 @@ class Simulation(object):
         self.sim.collision = 'direct'
         self.sim.collision_resolve = 'merge'
 
-        if self.io:
-            self.buffer_rebound = DataIO(output_file_name='data_reb_%d.h5' % self.args.seed, CONST_G=self.sim.G, append=True)
-
-        self.print(self.args)
 
     def ic_generate(self):
         if self.reb_continue:
             raise RuntimeError("Generating ICs when continuing in rebound is prohibited. Use ic_continue() instead.")
-
+    
         np.random.seed(self.args.seed)
         # alpha = 0: random and uniform distribution of mass; alpha < 0: power-law IMF; alpha = None: equal-mass
         if self.args.alpha is None:
@@ -246,7 +250,7 @@ class Simulation(object):
 
 
     def store_hdf5_rebound(self, energy):
-        self.sim.simulationarchive_snapshot(self.rebound_archive_out)
+        self.sim.simulationarchive_snapshot(self.args.rebound_archive)
 
         if self.sim.N < self.buffer_rebound.buf_x.shape[1]:
             self.buffer_rebound.flush()
@@ -324,6 +328,12 @@ class Simulation(object):
             de = abs((e-e_init)/e_init)
             self.print('t = %f, N = %d, sysT = %f, dE/E = %e' % (self.sim.t, self.sim.N, time.time() - self.evolve_start_t, de))
             self.store_hdf5_rebound(e)
+
+            if self.sim.N <= self.args.N_handoff:
+                self.sim.integrator_synchronize()
+
+                print(f"N <= {self.args.N_handoff}: Switching to mercurius")
+                self.init_mercurius()
 
     def finalize(self):
         if self.io:

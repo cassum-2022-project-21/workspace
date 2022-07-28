@@ -29,9 +29,9 @@ class IOPFSimulation(Simulation):
         os.chdir(self.full_dir)
         if "Output_file" in self.config:
             output_file = self.config["Output_file"]
-            regex = re.compile("\\d+")
+            regex = re.compile(r"t = ([0-9\.]+)")
             if os.path.isfile(output_file):
-                last_line = subprocess.check_output(["tail", "-1", output_file]).decode('utf-8')
+                last_line = subprocess.check_output(["tail", "-2", output_file]).decode('utf-8')
                 res = regex.findall(last_line)
                 if len(res) > 0:
                     self.t = float(res[0])

@@ -12,7 +12,7 @@ struct interp_loc {
 struct interp_loc interp_locate_linear(const double x, const double* const xs, const unsigned int N);
 struct interp_loc interp_locate_binary(const double x, const double* const xs, const unsigned int N);
 
-#define interp_locate interp_locate_linear
+#define interp_locate interp_locate_binary
 
 double interp_eval(const struct interp_loc loc, const double* const ys);
 double interp_eval_cubic(const struct interp_loc loc, const double* const ys);
@@ -28,6 +28,21 @@ inline void mag2_dir_2d(const double x, const double y, double* const r2, double
     double isr = 1.0 / sqrt(*r2);
     *ux = x * isr;
     *uy = y * isr;
+}
+
+inline void mag_dir_3d(const double x, const double y, const double z, double* const r, double* const ux, double* const uy, double* const uz) {
+    *r = sqrt(x*x + y*y + z*z);
+    *ux = x / *r;
+    *uy = y / *r;
+    *uz = z / *r;
+}
+
+inline void mag2_dir_3d(const double x, const double y, const double z, double* const r2, double* const ux, double* const uy, double* const uz) {
+    *r2 = x*x + y*y + z*z;
+    double isr = 1.0 / sqrt(*r2);
+    *ux = x * isr;
+    *uy = y * isr;
+    *uz = z * isr;
 }
 
 extern const double IOPF_PI; /* M_PI on GNU. consistency if we run on other system */

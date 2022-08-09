@@ -34,6 +34,9 @@ IOPF_torque_force = librebcforces.IOPF_torque_force
 IOPF_torque_force.argtypes = [POINTER(rebound.Particle), POINTER(rebound.Particle)]
 IOPF_torque_force.restype = None
 
+IOPF_torque_jonathan_force = librebcforces.IOPF_torque_jonathan_force
+IOPF_torque_jonathan_force.argtypes = [POINTER(rebound.Particle), POINTER(rebound.Particle)]
+IOPF_torque_jonathan_force.restype = None
 
 IOPF_drag_all = librebcforces.IOPF_drag_all
 IOPF_drag_all.argtypes = [POINTER(rebound.Simulation)]
@@ -42,6 +45,10 @@ IOPF_drag_all.restype = None
 IOPF_torque_all = librebcforces.IOPF_torque_all
 IOPF_torque_all.argtypes = [POINTER(rebound.Simulation)]
 IOPF_torque_all.restype = None
+
+IOPF_torque_jonathan_all = librebcforces.IOPF_torque_jonathan_all
+IOPF_torque_jonathan_all.argtypes = [POINTER(rebound.Simulation)]
+IOPF_torque_jonathan_all.restype = None
 
 IOPF_drag_torque_all = librebcforces.IOPF_drag_torque_all
 IOPF_drag_torque_all.argtypes = [POINTER(rebound.Simulation)]

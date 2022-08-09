@@ -1,6 +1,5 @@
 import os
 import numpy as np
-from SiMon.ic_generator import InitialConditionGenerator
 from itertools import product
 from random import sample
 
@@ -78,10 +77,6 @@ def generate_ic():
     output_dir_template = "iopf_sim_i_{std_i}_a_{a_in}_{a_out}_{random_seed}"
     # output_dir_template = "iopf_old_sim_NODRAG_BETA_{pa_beta}_N_{n_particles}_{random_seed}"
 
-
-    # IC generator
-    ic = InitialConditionGenerator(conf_file="SiMon.conf")
-
     param_names = []
     value_lists = []
     for p, v in parameter_space.items():
@@ -126,18 +121,42 @@ def generate_ic():
             **args_dict
         )
 
-        ic.generate_simulation_ic(
-            code_name,
-            parameter_space["t_end"],
-            output_dir,
-            start_cmd,
-            input_file="input.txt",
-            output_file="output.txt",
-            error_file="error.txt",
-            restart_cmd=restart_cmd,
-            stop_cmd=stop_cmd,
-        )
+        if "NEW_SLURM_JOB_NAME" in os.environ:
+            from pathlib import Path
 
+            jobdir = Path(os.environ["PARENT_SLURM_DIR"]) / os.environ["NEW_SLURM_JOB_NAME"] / output_dir
+            jobdir.mkdir(parents=True, exist_ok=True)
+
+            with open(jobdir / "exec.sh", "w") as f:
+                f.write(start_cmd)
+            
+        else:
+            from astrosimon import InitialConditionGenerator
+
+            # IC generator
+            ic = InitialConditionGenerator(conf_file="SiMon.conf")
+
+            ic.generate_simulation_ic(
+                code_name,
+                parameter_space["t_end"],
+                output_dir,
+                start_cmd,
+                input_file="input.txt",
+                output_file="output.txt",
+                error_file="error.txt",
+                restart_cmd=restart_cmd,
+                stop_cmd=stop_cmd,
+            )
+
+    if "NEW_SLURM_JOB_NAME" in os.environ:
+        p = Path(os.environ["PARENT_SLURM_DIR"]) / os.environ["NEW_SLURM_JOB_NAME"]
+        
+        with open(os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "vera_script.sh"
+        ), "r") as src, open(p / "vera_script.sh", "w") as dest:
+            s = src.read().replace("<<<JOB_NAME>>>", os.environ["NEW_SLURM_JOB_NAME"])
+            dest.write(s)
+            
 
 if __name__ == "__main__":
     generate_ic()

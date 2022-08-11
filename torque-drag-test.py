@@ -164,8 +164,9 @@ rebforces.copy_np_to_c(100 * gas_profile["torque"], rebforces.TORQUE_PROF, rebfo
 
 # %%
 from itertools import islice
+from ctypes import byref
 
-test_sim = TestSimulation(a=a, m=0.1 * EARTH_MASS, e=0.0, inc=0.0, output_dt=1000)
+test_sim = TestSimulation(a=a, m=0.1 * EARTH_MASS, e=0.01, inc=0.0, output_dt=1000)
 
 test_sim.additional_forces = rebforces.IOPF_torque_jonathan_all
 test_sim.force_is_velocity_dependent = 1
@@ -175,6 +176,18 @@ for i in test_sim:
 
     p = test_sim.particles[1]
     orbit = p.calculate_orbit()
+
+    primary = test_sim.particles[0]
+    r_p = (p.x - primary.x, p.y - primary.y, p.z - primary.z)
+    r_h = r_p / np.linalg.norm(r_p)
+    print(f"r = {r_h}")
+
+    T = rebforces.IOPF_unit_T_vector(byref(p), byref(primary))
+    T_p = np.array((T.x, T.y, T.z))
+    print(f"T = {T_p}")
+
+    print(f"r . T = {np.dot(r_p, T_p)}")
+    print(f"angle = {np.arccos(np.clip(np.dot(r_p, T_p), -1.0, 1.0))}")
 
     # adachi_vK = 2 * np.pi / np.sqrt(p.a)
     # iloc = rebforces.interp_locate_binary(p.a, rebforces.STD_PROF_X, rebforces.STD_PROF_N)

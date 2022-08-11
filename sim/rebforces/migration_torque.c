@@ -50,17 +50,8 @@ void IOPF_torque_force(struct reb_particle* const p, struct reb_particle* primar
     p->az += dvz * torque * Gamma_r / h;
 }
 
-void IOPF_torque_jonathan_all(struct reb_simulation* reb_sim) {
-    struct reb_particle* const particles = reb_sim->particles;
-    const int N = reb_sim->N;
-
-    for (int i = 1; i < N; i++) {
-        IOPF_torque_jonathan_force(particles + i, particles);
-    }
-}
-
-void IOPF_torque_jonathan_force(struct reb_particle* const p, struct reb_particle* primary) {
-    double mu,dx,dy,dz,dvx,dvy,dvz,d,hx,hy,hz,h;
+struct reb_vec3d IOPF_unit_T_vector(struct reb_particle* const p, struct reb_particle* primary) {
+    double mu,dx,dy,dz,dvx,dvy,dvz,hx,hy,hz,h;
 
     mu = p->sim->G*(p->m+primary->m);
     dx = p->x - primary->x;
@@ -75,18 +66,60 @@ void IOPF_torque_jonathan_force(struct reb_particle* const p, struct reb_particl
     hz = (dx*dvy - dy*dvx);
     h = sqrt(hx*hx + hy*hy + hz*hz);
 
-    double d2, ux, uy, uz;
-    mag2_dir_3d(dx, dy, dz, &d2, &ux, &uy, &uz);
-    d = sqrt(d2);
+    double d, ux, uy, uz;
+    mag_dir_3d(dx, dy, dz, &d, &ux, &uy, &uz);
 
     double _v2, uvx, uvy, uvz;
     mag2_dir_3d(dvx, dvy, dvz, &_v2, &uvx, &uvy, &uvz);
 
     double rv, phi_x, phi_y, phi_z;
     rv = ux * uvx + uy * uvy + uz * uvz,
-    phi_x = ux * rv - uvx * d2;
-    phi_y = uy * rv - uvy * d2;
-    phi_z = uz * rv - uvz * d2;
+    phi_x = ux * rv - uvx;
+    phi_y = uy * rv - uvy;
+    phi_z = uz * rv - uvz;
+
+    struct reb_vec3d T[1];
+    mag2_dir_3d(phi_x, phi_y, phi_z, &_v2, &T->x, &T->y, &T->z);
+
+    return *T;
+}
+
+void IOPF_torque_jonathan_all(struct reb_simulation* reb_sim) {
+    struct reb_particle* const particles = reb_sim->particles;
+    const int N = reb_sim->N;
+
+    for (int i = 1; i < N; i++) {
+        IOPF_torque_jonathan_force(particles + i, particles);
+    }
+}
+
+void IOPF_torque_jonathan_force(struct reb_particle* const p, struct reb_particle* primary) {
+    double mu,dx,dy,dz,dvx,dvy,dvz,hx,hy,hz,h;
+
+    mu = p->sim->G*(p->m+primary->m);
+    dx = p->x - primary->x;
+    dy = p->y - primary->y;
+    dz = p->z - primary->z;
+    dvx = p->vx - primary->vx;
+    dvy = p->vy - primary->vy;
+    dvz = p->vz - primary->vz;
+
+    hx = (dy*dvz - dz*dvy);
+    hy = (dz*dvx - dx*dvz);
+    hz = (dx*dvy - dy*dvx);
+    h = sqrt(hx*hx + hy*hy + hz*hz);
+
+    double d, ux, uy, uz;
+    mag_dir_3d(dx, dy, dz, &d, &ux, &uy, &uz);
+
+    double _v2, uvx, uvy, uvz;
+    mag2_dir_3d(dvx, dvy, dvz, &_v2, &uvx, &uvy, &uvz);
+
+    double rv, phi_x, phi_y, phi_z;
+    rv = ux * uvx + uy * uvy + uz * uvz,
+    phi_x = ux * rv - uvx;
+    phi_y = uy * rv - uvy;
+    phi_z = uz * rv - uvz;
     mag2_dir_3d(phi_x, phi_y, phi_z, &_v2, &phi_x, &phi_y, &phi_z);
 
     struct interp_loc iloc = interp_locate(d, STD_PROF_X, STD_PROF_N);

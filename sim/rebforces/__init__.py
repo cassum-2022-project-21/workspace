@@ -77,6 +77,10 @@ interp_eval_cubic = librebcforces.interp_eval_cubic
 interp_eval_cubic.argtypes = [InterpLoc, POINTER(c_double)]
 interp_eval_cubic.restype = c_double
 
+IOPF_unit_T_vector = librebcforces.IOPF_unit_T_vector
+IOPF_unit_T_vector.argtypes = [POINTER(rebound.Particle), POINTER(rebound.Particle)]
+IOPF_unit_T_vector.restype = rebound.simulation.reb_vec3d
+
 __STD_PROF_NMAX__ = 2048 # This should match the value in profiles.h
 STD_PROF_N = c_uint.in_dll(librebcforces, "STD_PROF_N")
 STD_PROF_X = (c_double * __STD_PROF_NMAX__).in_dll(librebcforces, "STD_PROF_X")

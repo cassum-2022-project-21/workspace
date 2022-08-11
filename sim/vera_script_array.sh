@@ -2,7 +2,10 @@
 
 #SBATCH -A C3SE508-18-3 -p astro1
 #SBATCH -J <<<JOB_NAME>>>
-#SBATCH -N 1 --exclusive
+
+# #SBATCH -N 1 --ntasks-per-node=32 --exclusive
+#SBATCH -n 1
+
 #SBATCH -t 1-12:00:00
 #SBATCH --cpus-per-task=2
 #SBATCH --mem-per-cpu 1024MB
@@ -14,12 +17,9 @@
 source ~/bert-vera.sh
 
 # Fetch one directory from the array based on the task ID (index starts from 0)
+DIRS = ($(ls -d */))
+CURRENT_DIR = ${DIRS[$SLURM_ARRAY_TASK_ID]}
 
-for CURRENT_DIR in $(ls -d */); do
-    (
-        echo "Running simulation $CURRENT_DIR"
-        cd $CURRENT_DIR
-        chmod u+x exec.sh
-        srun --exclusive --exact --job-name="$CURRENT_DIR" --ntasks=1 exec.sh
-    ) &
-done
+cd $CURRENT_DIR
+chmod u+x exec.sh
+./exec.sh

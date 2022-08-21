@@ -20,7 +20,7 @@ def mag_dir_2d(x, y):
     return r, x / r, y / r
 
 gas_profile_root = Path(__file__).parent / "../disk/calculated_profiles/"
-gas_profile_name = "20220721"
+gas_profile_name = "20200820"
 gas_profile = np.load(gas_profile_root / gas_profile_name / "all_variables.npz")
 
 rebforces.set_profiles(
@@ -327,6 +327,7 @@ class Simulation(object):
             e = self.sim.calculate_energy()
             de = abs((e-e_init)/e_init)
             self.print('t = %f, N = %d, sysT = %f, dE/E = %e' % (self.sim.t, self.sim.N, time.time() - self.evolve_start_t, de))
+            self.print(self.sim.particles[1].a)
             self.store_hdf5_rebound(e)
 
             if self.sim.N <= self.args.N_handoff:
@@ -334,6 +335,8 @@ class Simulation(object):
 
                 print(f"N <= {self.args.N_handoff}: Switching to mercurius")
                 self.init_mercurius()
+
+                self.args.N_handoff = -1
 
     def finalize(self):
         if self.io:

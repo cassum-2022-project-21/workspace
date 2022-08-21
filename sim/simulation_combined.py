@@ -16,9 +16,13 @@ from pathlib import Path
 import rebforces
 import json
 
-def mag_dir_2d(x, y):
-    r = np.sqrt(x*x + y*y)
-    return r, x / r, y / r
+from amuse import TrackLiteratureReferences
+
+TrackLiteratureReferences.suppress_output()
+
+# def mag_dir_2d(x, y):
+#     r = np.sqrt(x*x + y*y)
+#     return r, x / r, y / r
 
 gas_profile_root = Path(__file__).parent / "../disk/calculated_profiles/"
 gas_profile_name = "20200820"
@@ -117,7 +121,7 @@ class Simulation(object):
         self.sim.collision_resolve = 'merge'
 
         if self.io:
-            self.buffer_rebound = DataIO(output_file_name='data_reb_%d.h5' % self.args.seed, CONST_G=self.sim.G, append=True)
+            self.buffer_rebound = DataIO(output_file_name='data_reb_%d.h5' % self.args.seed, CONST_G=self.sim.G, append=self.reb_continue)
 
         self.print(self.args)
 

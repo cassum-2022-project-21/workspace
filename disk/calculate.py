@@ -20,7 +20,7 @@ if __name__ == "__main__":
 def load_data(name, interp_r=None, interp_kind=None):
     _r, _l = np.loadtxt(_input_dir / f"{name}.txt").T
     if interp_r is not None:
-        return interp1d(_r, _l, kind=interp_kind)(interp_r)
+        return interp1d(_r, _l, kind=interp_kind or "linear", fill_value="extrapolate")(interp_r)
     else:
         return _l
 
@@ -29,17 +29,18 @@ def save_data(name, data, **kwargs):
         np.savetxt(_output_dir / name, data, **kwargs)
 
 r = np.loadtxt(_input_dir / "rad_chart.txt")
+r = np.exp(np.linspace(np.log(r.min()), np.log(r.max()), len(r) * 2))
 save_data("rad_chart.txt", r, fmt="%.9e")
 
 # Merge velocity files
-vt_gas = load_data("vt_gas")
-vr_gas = load_data("vr_gas")
+vt_gas = load_data("vt_gas", r)
+vr_gas = load_data("vr_gas", r)
 
 velocity = np.column_stack([vt_gas, vr_gas])
 save_data("velocity.txt", velocity, fmt="%.9e")
 
 # Calculate density
-T = load_data("temperature")
+T = load_data("temperature", r)
 k_B = 1.3807e-16 # cm^2 g s^-2 K^-1
 m_p = 1.66e-24; mu = 2.33
 gamma = 1.0 # Use new value of gamma = 1.0 not 1.4
@@ -55,11 +56,11 @@ v = v_K - vt_gas
 va = np.abs(v)
 vs = np.sign(v)
 
-sigma = load_data("sigma")
+sigma = load_data("sigma", r)
 rho_0 = sigma / (H * np.sqrt(2*np.pi))
 save_data("midplane_density.txt", np.column_stack([r, rho_0]), fmt="%.9e")
 
-alpha = load_data("alpha")
+alpha = load_data("alpha", r)
 
 nd = sigma / (2 * H * m_p * mu)
 la = 1 / (nd * 2e-15)
@@ -85,19 +86,25 @@ eta = 1 - np.square(vt_gas / v_K)
 eta_adachi = eta / 2
 v_rp = (-eta * v_K)[:, np.newaxis] / (tau + 1. / tau)
 
-fa = 0.225
-fc = 50
-fm = 0.03
-fk = 640
-fb = 1
-fsr = fk * (r - fa)
-torque = -fb * fsr / (fsr * fsr + fc) + fm 
+# fa = 0.225
+# fc = 50
+# fm = 0.03
+# fk = 640
+# fb = 1
+# fsr = fk * (r - fa)
+# torque = -fb * fsr / (fsr * fsr + fc) + fm 
+
+torque = load_data("torque", r / 2.3)
+
+alpha_grad = (- r / sigma) * np.gradient(sigma, r)
+beta_grad = (- r / T) * np.gradient(T, r)
+paardekooper_torque = -0.85 - alpha_grad - 0.9 * beta_grad
 
 if _should_save:
     from matplotlib.rcsetup import cycler
     import matplotlib.pyplot as plt
 
-    l = np.logical_and(r > 0.15, r < 0.35)
+    l = np.logical_and(r > 0.15, r < 0.30)
 
     plt.rc('axes', prop_cycle=(cycler(marker=['o'], ms=[4])))
 
@@ -119,7 +126,7 @@ if _should_save:
     axs[4].plot(r[l], sigma[l])
     axs[4].set_ylabel("$\\Sigma$ [g / cm$^2$]")
 
-    axs[3].hlines(0, 0.15, 0.35, linestyles="--", color="black")
+    axs[3].hlines(0, 0.15, 0.30, linestyles="--", color="black")
     axs[3].plot(r[l], eta[l])
     axs[3].set_ylim(-0.003, 0.003)
     axs[3].set_ylabel("$\\eta$")

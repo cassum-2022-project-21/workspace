@@ -147,7 +147,6 @@ def set_simple_profile(a, alpha, Sigma, eta, torque, C_D, h, torque_transition=N
 # set_simple_profile(a, alpha, Sigma, eta, torque, C_D, h)
 # # set_simple_profile(a, alpha, Sigma, eta, torque, C_D, h, 0.225)
 
-a = 0.21
 C_D = 1.0
 
 rebforces.set_profiles(
@@ -160,57 +159,119 @@ rebforces.set_profiles(
 
 rebforces.copy_np_to_c(gas_profile["sigma"] * rebforces.G_PER_CM3 / 14959787070000, rebforces.SURFACE_DENSITY_PROF, rebforces.STD_PROF_N.value)
 rebforces.copy_np_to_c(gas_profile["H"] / gas_profile["r_cm"], rebforces.SCALE_HEIGHT_PROF, rebforces.STD_PROF_N.value)
-rebforces.copy_np_to_c(100 * gas_profile["torque"], rebforces.TORQUE_PROF, rebforces.STD_PROF_N.value)
+rebforces.copy_np_to_c(10 * gas_profile["torque"], rebforces.TORQUE_PROF, rebforces.STD_PROF_N.value)
 
 # %%
-from itertools import islice
+from itertools import islice, product
+import matplotlib.pyplot as plt
 from ctypes import byref
 
-test_sim = TestSimulation(a=a, m=0.1 * EARTH_MASS, e=0.01, inc=0.0, output_dt=1000)
+_a = [0.22, 0.24]
+_e = [0.1]
+force = ["instant", "a"]
 
-test_sim.additional_forces = rebforces.IOPF_torque_jonathan_all
-test_sim.force_is_velocity_dependent = 1
+fig, axs = plt.subplots(1, 2, figsize=(8, 4))
 
-for i in test_sim:
-    print(i)
+for (a, e, f) in product(_a, _e, force):
+    test_sim = TestSimulation(a=a, m=1.0 * EARTH_MASS, e=e, inc=0.0, output_dt=1000)
+    test_sim.integrator = "WHFast"
+    test_sim.dt = test_sim.particles[1].P / 50
 
-    p = test_sim.particles[1]
-    orbit = p.calculate_orbit()
+    if f == "a":
+        test_sim.additional_forces = rebforces.IOPF_torque_all
+    else:
+        test_sim.additional_forces = rebforces.IOPF_torque_jonathan_all
+    test_sim.force_is_velocity_dependent = 1
 
-    primary = test_sim.particles[0]
-    r_p = (p.x - primary.x, p.y - primary.y, p.z - primary.z)
-    r_h = r_p / np.linalg.norm(r_p)
-    print(f"r = {r_h}")
+    ap = []
+    ep = []
+    tp = []
+    for i in islice(test_sim, 50):
+        p = test_sim.particles[1]
+        orbit = p.calculate_orbit()
 
-    T = rebforces.IOPF_unit_T_vector(byref(p), byref(primary))
-    T_p = np.array((T.x, T.y, T.z))
-    print(f"T = {T_p}")
+        tp.append(test_sim.t)
+        ap.append(orbit.a)
+        ep.append(orbit.e)
 
-    print(f"r . T = {np.dot(r_p, T_p)}")
-    print(f"angle = {np.arccos(np.clip(np.dot(r_p, T_p), -1.0, 1.0))}")
+        d[(a, e, f)] = {
+            "tp": tp,
+            "ap": ap,
+            "ep": ep
+        }
+    
+    axs[0].plot(tp, ap)
+    axs[1].plot(tp, ep)
 
-    # adachi_vK = 2 * np.pi / np.sqrt(p.a)
-    # iloc = rebforces.interp_locate_binary(p.a, rebforces.STD_PROF_X, rebforces.STD_PROF_N)
-    # rho_0i = rebforces.interp_eval_cubic(iloc, rebforces.DENSITY_PROF)
-    # adachi_tau0 = 2 * p.m / (np.pi * C_D * p.r**2 * adachi_vK * rho_0i)
+    print(a, e, f)
 
-    # adachi_rDa = -2 * ((0.97 * orbit.e + 0.64 * orbit.inc + eta) * eta + (0.16 * alpha + 0.35) * orbit.e**3 + 0.16 * orbit.inc**2) / adachi_tau0
-    # adachi_rDe = -(0.77 * orbit.e + 0.64 * orbit.inc + eta) / adachi_tau0
-    # adachi_rDi = -0.5 * (0.77 * orbit.e + 0.85 * orbit.inc + eta) / adachi_tau0
+        # primary = test_sim.particles[0]
+        # r_p = (p.x - primary.x, p.y - primary.y, p.z - primary.z)
+        # r_h = r_p / np.linalg.norm(r_p)
+        # print(f"r = {r_h}")
 
-    # print(
-    #     "Adachi predictions:\n"
-    #     f"rDa={adachi_rDa:+.5e}\n"
-    #     f"rDe={adachi_rDe:+.5e}\n"
-    #     f"rDi={adachi_rDi:+.5e}\n"
-    # )
+        # T = rebforces.IOPF_unit_T_vector(byref(p), byref(primary))
+        # T_p = np.array((T.x, T.y, T.z))
+        # print(f"T = {T_p}")
 
-    # omega_K2 = 4 * np.pi**2 / (orbit.a * orbit.a * orbit.a)
-    # Sigma_i = rebforces.interp_eval_cubic(iloc, rebforces.SURFACE_DENSITY_PROF)
-    # h_i = rebforces.interp_eval_cubic(iloc, rebforces.SCALE_HEIGHT_PROF)
-    # gamma_r = p.m * Sigma_i * orbit.a**4 * omega_K2 / (h_i * h_i)
+        # print(f"r . T = {np.dot(r_p, T_p)}")
+        # print(f"angle = {np.arccos(np.clip(np.dot(r_p, T_p), -1.0, 1.0))}")
 
-    # print(
-    #     "Torque law:\n"
-    #     f"Dh = {gamma_r * torque:+.5e}\n"
-    # )
+        # adachi_vK = 2 * np.pi / np.sqrt(p.a)
+        # iloc = rebforces.interp_locate_binary(p.a, rebforces.STD_PROF_X, rebforces.STD_PROF_N)
+        # rho_0i = rebforces.interp_eval_cubic(iloc, rebforces.DENSITY_PROF)
+        # adachi_tau0 = 2 * p.m / (np.pi * C_D * p.r**2 * adachi_vK * rho_0i)
+
+        # adachi_rDa = -2 * ((0.97 * orbit.e + 0.64 * orbit.inc + eta) * eta + (0.16 * alpha + 0.35) * orbit.e**3 + 0.16 * orbit.inc**2) / adachi_tau0
+        # adachi_rDe = -(0.77 * orbit.e + 0.64 * orbit.inc + eta) / adachi_tau0
+        # adachi_rDi = -0.5 * (0.77 * orbit.e + 0.85 * orbit.inc + eta) / adachi_tau0
+
+        # print(
+        #     "Adachi predictions:\n"
+        #     f"rDa={adachi_rDa:+.5e}\n"
+        #     f"rDe={adachi_rDe:+.5e}\n"
+        #     f"rDi={adachi_rDi:+.5e}\n"
+        # )
+
+        # omega_K2 = 4 * np.pi**2 / (orbit.a * orbit.a * orbit.a)
+        # Sigma_i = rebfokrces.interp_eval_cubic(iloc, rebforces.SURFACE_DENSITY_PROF)
+        # h_i = rebforces.interp_eval_cubic(iloc, rebforces.SCALE_HEIGHT_PROF)
+        # gamma_r = p.m * Sigma_i * orbit.a**4 * omega_K2 / (h_i * h_i)
+
+        # print(
+        #     "Torque law:\n"
+        #     f"Dh = {gamma_r * torque:+.5e}\n"
+        # )
+
+# %%
+
+fig, axs = plt.subplots(3, 2, figsize=(8, 12))
+
+for k, v in d.items():
+    row = 0
+    if k[1] > 0.005:
+        row += 1
+    if k[1] > 0.05:
+        row += 1
+    
+    ls = "dashed"
+    zorder = 1
+    if k[2] == "a":
+        ls = "solid"
+        zorder = 0
+
+    ap = np.array(v["ap"])
+    ep = np.array(v["ep"])
+    tp = np.array(v["tp"])
+    # dAp = np.gradient(ap, tp)
+
+    axs[row][0].plot(tp, ap, linestyle=ls, zorder=zorder)
+    axs[row][1].plot(tp, ep, linestyle=ls, zorder=zorder)
+    # axs[row][2].plot(tp, dAp, linestyle=ls)
+
+axs[0][0].set_title("$a$ [AU]")
+axs[0][1].set_title("$e$")
+
+axs[1][1].set_ylim(0, 0.05)
+
+fig.suptitle("Solid lines $F = \\vec{v} (\\Gamma(a) / L$); Dashed lines $F = \\hat{\\varphi} (\\Gamma(r) / r)$")

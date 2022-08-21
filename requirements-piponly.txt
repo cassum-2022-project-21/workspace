@@ -6,3 +6,6 @@ numpy>=1.2.2
 pytest>=3.0
 mpi4py>=1.1.0
 h5py>=1.1.0
+toml
+python-dateutil>=2.7.3
+pytz>=2017.3

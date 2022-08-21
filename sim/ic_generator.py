@@ -5,7 +5,7 @@ from random import sample
 
 # k = [6674, 11857, 17619, 49863, 70080, 72049, 80151, 95704, 96616]
 
-k = [70080, 72049, 80151, 95704, 96616]
+k = [15161, 19231, 20223, 30284, 37293, 40023, 42310, 50023, 51273, 62939, 70080, 72049, 80151, 81988, 95704, 96616]
 
 def generate_ic():
     parameter_space = {
@@ -17,17 +17,17 @@ def generate_ic():
         "alpha": -2,
         # "rebound-archive": "rebound_archive.bin",
         ("pa-rate", "pa-beta"): [(0.0, None)],
-        "drag-coefficient": 1.0,
-        "migration-torque": "",
+        "drag-coefficient": [0.0, 0.44],
+        # "migration-torque": "",
 
         "N_end": 1,
         "N_enddelay": 1.0,
 
         "m-total": 1.0,
 
-        # ("a-in", "a-out", "std-e", "std-i"): [(0.22, 0.24, 0.02, 0.01)],
+        ("a-in", "a-out", "std-e", "std-i"): [(0.22, 0.24, 0.02, 0.01)],
         # ("a-in", "a-out", "std-e", "std-i"): [(0.229, 0.231, 0.02, 0.0)],
-        ("a-in", "a-out", "std-e", "std-i"): [(0.229, 0.231, 0.02, 0.01), (0.22, 0.24, 0.02, 0.0)],
+        # ("a-in", "a-out", "std-e", "std-i"): [(0.229, 0.231, 0.02, 0.01), (0.22, 0.24, 0.02, 0.0)],
 
         "rho": 3.0,
         "N_handoff": 45
@@ -74,7 +74,7 @@ def generate_ic():
     start_cmd_template = "rm -f DONE ; python -u {executable_path} {args} 1>>output.txt 2>>error.txt"
     restart_cmd_template = "rm -f DONE ; touch restart.txt ; python -u {executable_path} {args} 1>>output.txt 2>>error.txt"
     stop_cmd = "touch STOP"
-    output_dir_template = "iopf_sim_i_{std_i}_a_{a_in}_{a_out}_{random_seed}"
+    output_dir_template = "iopf_sim_DRAG_{drag_coefficient}_NPA_a_{a_in}_{a_out}_e_{std_e}_i_{std_i}_{random_seed}"
     # output_dir_template = "iopf_old_sim_NODRAG_BETA_{pa_beta}_N_{n_particles}_{random_seed}"
 
     param_names = []
@@ -128,6 +128,7 @@ def generate_ic():
             jobdir.mkdir(parents=True, exist_ok=True)
 
             with open(jobdir / "exec.sh", "w") as f:
+                f.write("#!/usr/bin/env bash\n")
                 f.write(start_cmd)
             
         else:

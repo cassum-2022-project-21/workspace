@@ -28,8 +28,8 @@ def generate_ic():
         # "rebound-archive": "rebound_archive.bin",
         ("pa-rate", "pa-beta"): [(0.0, None)],
         "drag-coefficient": [0.0, 0.44],
-        "migration-torque": ["", None],
-
+#        "migration-torque": ["", None],
+        "migration-torque": "",
         "N_end": 1,
         "N_enddelay": 1.0,
 

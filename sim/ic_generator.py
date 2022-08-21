@@ -103,13 +103,13 @@ def generate_ic():
                 value = value()
             param_name = param_names[i]
             if isinstance(param_name, str):
-                if value is not None:
+                if value is not None and not param_name.startswith("_"):
                     args_list.append(f"--{param_name}")
                     args_list.append(str(value))
                 args_dict[param_name.replace("-", "_")] = value
             elif isinstance(param_name, tuple):
                 for j, p in enumerate(param_name):
-                    if value[j] is not None:
+                    if value[j] is not None and not p.startswith("_"):
                         args_list.append(f"--{p}")
                         args_list.append(str(value[j]))
                     args_dict[p.replace("-", "_")] = value[j]

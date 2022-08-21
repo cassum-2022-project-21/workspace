@@ -14,6 +14,7 @@ from scipy.interpolate import interp1d
 import time
 from pathlib import Path
 import rebforces
+import json
 
 def mag_dir_2d(x, y):
     r = np.sqrt(x*x + y*y)
@@ -95,6 +96,9 @@ class Simulation(object):
 
         if self.args.rebound_archive is None:
             self.args.rebound_archive = f"rebound_archive_{self.args.seed}.bin"
+
+        with open("args.json", "w") as f:
+            json.dump(self.args.__dict__, f, indent=2)
 
     def init(self):
         self.print('Using rebound as the integrator...')

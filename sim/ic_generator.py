@@ -1,16 +1,15 @@
 import os
 import numpy as np
 from itertools import product
-from random import sample
+from random import randint
 import hashlib
 
 import subprocess
 
 GIT_HASH = subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
 
-# k = [6674, 11857, 17619, 49863, 70080, 72049, 80151, 95704, 96616]
-
-k = [15161, 19231, 20223, 30284, 37293, 40023, 42310, 50023, 51273, 62939, 70080, 72049, 80151, 81988, 95704, 96616]
+def gen_seed():
+    return randint(10000, 99999)
 
 sha = hashlib.sha256()
 def my_hash(args):
@@ -19,7 +18,8 @@ def my_hash(args):
 
 def generate_ic():
     parameter_space = {
-        "random-seed": k,
+        "_i": list(range(16)),
+        "random-seed": gen_seed,
         "t_end": 2000000.0,
         "store-dt": 1000.0,
         "n-particles": 100,
@@ -28,8 +28,8 @@ def generate_ic():
         # "rebound-archive": "rebound_archive.bin",
         ("pa-rate", "pa-beta"): [(0.0, None)],
         "drag-coefficient": [0.0, 0.44],
-#        "migration-torque": ["", None],
-        "migration-torque": "",
+       "migration-torque": ["", None],
+        # "migration-torque": "",
         "N_end": 1,
         "N_enddelay": 1.0,
 
@@ -40,7 +40,7 @@ def generate_ic():
         # ("a-in", "a-out", "std-e", "std-i"): [(0.229, 0.231, 0.02, 0.01), (0.22, 0.24, 0.02, 0.0)],
 
         "rho": 3.0,
-        "N_handoff": 45
+        "N_handoff": -1
 
         # "continue-from": 1100000.0
     }
@@ -91,8 +91,6 @@ def generate_ic():
     param_names = []
     value_lists = []
     for p, v in parameter_space.items():
-        if callable(v):
-            v = v()
         if not isinstance(v, list):
             v = [v]
         param_names.append(p)
@@ -101,6 +99,8 @@ def generate_ic():
         args_list = []
         args_dict = {}
         for i, value in enumerate(values):
+            if callable(value):
+                value = value()
             param_name = param_names[i]
             if isinstance(param_name, str):
                 if value is not None:

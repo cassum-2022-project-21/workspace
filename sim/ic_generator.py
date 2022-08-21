@@ -2,10 +2,20 @@ import os
 import numpy as np
 from itertools import product
 from random import sample
+import hashlib
+
+import subprocess
+
+GIT_HASH = subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
 
 # k = [6674, 11857, 17619, 49863, 70080, 72049, 80151, 95704, 96616]
 
 k = [15161, 19231, 20223, 30284, 37293, 40023, 42310, 50023, 51273, 62939, 70080, 72049, 80151, 81988, 95704, 96616]
+
+sha = hashlib.sha256()
+def my_hash(args):
+    sha.update((GIT_HASH+args).encode("utf-8"))
+    return sha.hexdigest()[:6]
 
 def generate_ic():
     parameter_space = {
@@ -18,7 +28,7 @@ def generate_ic():
         # "rebound-archive": "rebound_archive.bin",
         ("pa-rate", "pa-beta"): [(0.0, None)],
         "drag-coefficient": [0.0, 0.44],
-        # "migration-torque": "",
+        "migration-torque": ["", None],
 
         "N_end": 1,
         "N_enddelay": 1.0,
@@ -74,7 +84,8 @@ def generate_ic():
     start_cmd_template = "rm -f DONE ; python -u {executable_path} {args} 1>>output.txt 2>>error.txt"
     restart_cmd_template = "rm -f DONE ; touch restart.txt ; python -u {executable_path} {args} 1>>output.txt 2>>error.txt"
     stop_cmd = "touch STOP"
-    output_dir_template = "iopf_sim_DRAG_{drag_coefficient}_NPA_a_{a_in}_{a_out}_e_{std_e}_i_{std_i}_{random_seed}"
+
+    output_dir_template = "iopf_sim_TORQUE_{migration_torque}_DRAG_{drag_coefficient}_NPA_a_{a_in}_{a_out}_e_{std_e}_i_{std_i}_{random_seed}_{sim_hash}"
     # output_dir_template = "iopf_old_sim_NODRAG_BETA_{pa_beta}_N_{n_particles}_{random_seed}"
 
     param_names = []
@@ -105,19 +116,24 @@ def generate_ic():
             else:
                 raise TypeError("Invalid parameter type")
         args = " ".join(args_list)
+        sim_hash = my_hash(args)
+
         start_cmd = start_cmd_template.format(
             executable_path=executable_path,
             args=args,
+            sim_hash=sim_hash,
             **args_dict
         )
         restart_cmd = restart_cmd_template.format(
             executable_path=executable_path,
             args=args,
+            sim_hash=sim_hash,
             **args_dict
         )
         output_dir = output_dir_template.format(
             executable_path=executable_path,
             args=args,
+            sim_hash=sim_hash,
             **args_dict
         )
 

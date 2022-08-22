@@ -142,3 +142,5 @@ sim/rebforces/test/test*
 sim/rebforces/test/out*.txt
 !sim/rebforces/test/*.c
 images/webgl*
+
+data/*

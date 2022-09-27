@@ -49,6 +49,8 @@ class Simulation(object):
         self.early_stop_time = None
         self.pa_beta_f = None
         self.reb_continue = False
+        self.introduction_times = None
+        self.introduction_index = None
 
         self.verbose = True
         self.io = io
@@ -90,6 +92,8 @@ class Simulation(object):
 
         parser.add_argument('--N_handoff', dest='N_handoff', type=int, default=-1, help="Switch to mercurius integrator")
 
+        parser.add_argument('--introduction-time', dest='introduction_time', type=float, default=-1, help="Time to introduce all particles")
+
         if override is None:
             self.args = parser.parse_args()
         else:
@@ -97,6 +101,9 @@ class Simulation(object):
 
         n, d = self.args.pa_beta.split("_")
         self.pa_beta_f = float(n) / float(d)
+
+        if self.args.introduction_time > 0:
+            self.introduction_times = np.sort(np.random.sample(self.args.n_p-1)) * self.args.introduction_time
 
         if self.args.rebound_archive is None:
             self.args.rebound_archive = f"rebound_archive_{self.args.seed}.bin"
@@ -188,10 +195,14 @@ class Simulation(object):
             self.print('Adding a planet at a=%f with m=%f Earth masses' % (self.args.pa, self.args.pm))
             self.sim.add(m=self.args.pm, a=self.args.pa, r=r_planet, primary=self.sim.particles[0],
                             hash=np.random.randint(100000000, 999999999))
-        self.print('Adding N=%d planetesimals...' % self.args.n_p)
-        for i in range(len(a_p)):
+
+        n_init = self.args.n_p if self.args.introduction_time is None else 1
+        self.print('Adding N=%d planetesimals...' % n_init)
+        for i in range(n_init):
             self.sim.add(m=m_p[i].value_in(units.MSun), a=a_p[i]+a_gap, e=e_p[i], inc=i_p[i], f=f_p[i], r=r_p[i],
                             primary=self.sim.particles[0], hash=np.random.randint(100000000, 999999999))
+        self.m_p = m_p; self.a_p = a_p; self.a_gap = a_gap; self.e_p = e_p; self.i_p = i_p; self.f_p = f_p; self.r_p = r_p
+        self.introduction_index = n_init
         self.sim.move_to_com()
         # initialize the buffer
 
@@ -260,7 +271,7 @@ class Simulation(object):
     def store_hdf5_rebound(self, energy):
         self.sim.simulationarchive_snapshot(self.args.rebound_archive)
 
-        if self.sim.N < self.buffer_rebound.buf_x.shape[1]:
+        if self.sim.N != self.buffer_rebound.buf_x.shape[1]:
             self.buffer_rebound.flush()
             self.buffer_rebound.reset_buffer()
             self.buffer_rebound.initialize_buffer(self.sim.N)
@@ -307,6 +318,16 @@ class Simulation(object):
             for i in range(1, self.sim.N):
                 self.sim.particles[i].m += (m_i2[i]/mtot*pa_rate)
 
+    def introduce_particle(self):
+        i = self.introduction_index
+        self.sim.add(m=self.m_p[i].value_in(units.MSun), a=self.a_p[i]+self.a_gap,
+                e=self.e_p[i], inc=self.i_p[i], f=self.f_p[i], r=self.r_p[i],
+                primary=self.sim.particles[0], hash=np.random.randint(100000000, 999999999))
+        self.introduction_index += 1
+        if self.introduction_index == self.args.n_p-1:
+            self.introduction_index = None
+
+
     def evolve_model(self):
         self.sim.exact_finish_time = 0
         self.print('Start integration...')
@@ -317,9 +338,10 @@ class Simulation(object):
         self.store_hdf5_rebound(e_init)
         self.t_store = self.sim.t
         while self.sim.t < self.args.t_end and not self.should_early_stop:
-            while self.sim.t < self.t_store + self.dt:
+            nt, should_introduce = self.next_t(self.t_store)
+            while self.sim.t < nt:
                 try:
-                    self.sim.integrate(self.t_store+self.dt)
+                    self.sim.integrate(nt)
                     self.pebble_accretion()
                     self.sim.move_to_com()
                 except rebound.Collision as error:
@@ -337,6 +359,9 @@ class Simulation(object):
             self.print('t = %f, N = %d, sysT = %f, dE/E = %e' % (self.sim.t, self.sim.N, time.time() - self.evolve_start_t, de))
             self.print(self.sim.particles[1].a)
             self.store_hdf5_rebound(e)
+
+            if should_introduce:
+                self.introduce_particle()
 
             if self.sim.N <= self.args.N_handoff:
                 self.sim.integrator_synchronize()
@@ -371,6 +396,16 @@ class Simulation(object):
     @property
     def dt(self):
         return self.args.store_dt
+
+    def next_t(self, store_t):
+        reg = store_t + self.dt
+        if self.introduction_index is None:
+            return reg, False
+        irr = self.introduction_times[self.introduction_index]
+        if irr < reg:
+            return irr, True
+        else:
+            return reg, False
 
 if __name__ == "__main__":
     import signal

@@ -176,6 +176,8 @@ class Simulation(object):
         e_p = np.random.rayleigh(scale=e_rayleigh_scale, size=self.args.n_p)
         i_p = np.random.rayleigh(scale=i_rayleigh_scale, size=self.args.n_p)
         f_p = np.random.uniform(low=0.0, high=2*np.pi, size=(self.args.n_p, ))
+        Ω_p = np.random.uniform(low=0.0, high=2*np.pi, size=(self.args.n_p, ))
+        ω_p = np.random.uniform(low=0.0, high=2*np.pi, size=(self.args.n_p, ))
         rho = self.args.rho | (units.g / units.cm ** 3)
         r_p = (self.args.ef * (0.75 * m_p / rho / np.pi) ** (1. / 3)).value_in(units.AU)
 
@@ -203,9 +205,9 @@ class Simulation(object):
         n_init = self.args.n_p if self.args.introduction_time is None else 1
         self.print('Adding N=%d planetesimals...' % n_init)
         for i in range(n_init):
-            self.sim.add(m=m_p[i].value_in(units.MSun), a=a_p[i]+a_gap, e=e_p[i], inc=i_p[i], f=f_p[i], r=r_p[i],
+            self.sim.add(m=m_p[i].value_in(units.MSun), a=a_p[i]+a_gap, e=e_p[i], inc=i_p[i], Omega=Ω_p[i], omega=ω_p[i], f=f_p[i], r=r_p[i],
                             primary=self.sim.particles[0], hash=np.random.randint(100000000, 999999999))
-        self.m_p = m_p; self.a_p = a_p; self.a_gap = a_gap; self.e_p = e_p; self.i_p = i_p; self.f_p = f_p; self.r_p = r_p
+        self.m_p = m_p; self.a_p = a_p; self.a_gap = a_gap; self.e_p = e_p; self.i_p = i_p; self.f_p = f_p; self.Ω_p = Ω_p; self.ω_p = ω_p; self.r_p = r_p
         
         if self.args.introduction_time is not None:
             self.introduction_index = n_init
@@ -216,7 +218,7 @@ class Simulation(object):
         if self.io:
             self.buffer_rebound.initialize_buffer(self.sim.N)
             lim = 0.2
-            fig, _ = rebound.OrbitPlot(self.sim, color=True, unitlabel="[AU]", xlim=(-lim, lim), ylim=(-lim, lim))
+            fig, *_ = rebound.OrbitPlot(self.sim, color=True, unitlabel="[AU]", xlim=(-lim, lim), ylim=(-lim, lim), slices=0.5)
             plt.savefig('orbits.pdf')
             plt.close(fig)
 
@@ -328,7 +330,7 @@ class Simulation(object):
     def introduce_particle(self):
         i = self.introduction_index
         self.sim.add(m=self.m_p[i].value_in(units.MSun), a=self.a_p[i]+self.a_gap,
-                e=self.e_p[i], inc=self.i_p[i], f=self.f_p[i], r=self.r_p[i],
+                e=self.e_p[i], inc=self.i_p[i], Omega=self.Ω_p[i], omega=self.ω_p[i], f=self.f_p[i], r=self.r_p[i],
                 primary=self.sim.particles[0], hash=np.random.randint(100000000, 999999999))
         self.introduction_index += 1
         if self.introduction_index == self.args.n_p-1:
@@ -427,18 +429,18 @@ if __name__ == "__main__":
     else:
         sim.ic_generate()
 
-    def interrupt_handler(signum, frame):
-        print(f"Interrupt at {sim.sim.t=}. Calling sim.finalize()", file=sys.stderr)
-        sim.finalize()
-        sys.exit(1)
+    # def interrupt_handler(signum, frame):
+    #     print(f"Interrupt at {sim.sim.t=}. Calling sim.finalize()", file=sys.stderr)
+    #     sim.finalize()
+    #     sys.exit(1)
 
-    signal.signal(signal.SIGINT, interrupt_handler)
+    # signal.signal(signal.SIGINT, interrupt_handler)
 
-    sim.evolve_model()
+    # sim.evolve_model()
 
-    try:
-        sim.save()
-        sim.finalize()
-        open("DONE", "w").close()
-    except KeyboardInterrupt:
-        interrupt_handler(None, None)
+    # try:
+    #     sim.save()
+    #     sim.finalize()
+    #     open("DONE", "w").close()
+    # except KeyboardInterrupt:
+    #     interrupt_handler(None, None)

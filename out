@@ -1,0 +1,2085 @@
+ 1/1: import radmc3dPy
+ 2/1: import radmc3dPy
+ 3/1: import radmc3dPy
+ 4/1: import radmc3dPy
+ 5/1:
+from pathlib import Path
+import pandas as pd
+import os
+
+data_dir = Path(os.environ["SLURM_JOB_DIR"])
+jobs = ["IOPFPlanets20220810", "IOPFPlanets20220820", "IOPFPlanets20220822Narrow"]
+
+argfiles = [argfile for job in jobs for argfile in (data_dir / job).glob("*/args.json")]
+sims_records = pd.DataFrame.from_records(pd.read_json(argfile, typ="series") for argfile in argfiles)
+sims_paths = pd.DataFrame.from_records({"run": argfile.parent.name, "path": argfile.parent} for argfile in argfiles)
+sims_df = pd.concat([sims_records, sims_paths], axis="columns")
+
+import matplotlib
+
+matplotlib.colors.ColorConverter.colors['cassum:orange'] = "#e77a35"
+matplotlib.colors.ColorConverter.colors['cassum:blue'] = "#3b8ce2"
+
+matplotlib.colors.cnames['cassum:orange'] = "#e77a35"
+matplotlib.colors.cnames['cassum:blue'] = "#3b8ce2"
+ 5/2:
+from pathlib import Path
+import pandas as pd
+import os
+
+data_dir = Path(os.environ["PARENT_SLURM_DIR"])
+jobs = ["IOPFPlanets20220810", "IOPFPlanets20220820", "IOPFPlanets20220822Narrow"]
+
+argfiles = [argfile for job in jobs for argfile in (data_dir / job).glob("*/args.json")]
+sims_records = pd.DataFrame.from_records(pd.read_json(argfile, typ="series") for argfile in argfiles)
+sims_paths = pd.DataFrame.from_records({"run": argfile.parent.name, "path": argfile.parent} for argfile in argfiles)
+sims_df = pd.concat([sims_records, sims_paths], axis="columns")
+
+import matplotlib
+
+matplotlib.colors.ColorConverter.colors['cassum:orange'] = "#e77a35"
+matplotlib.colors.ColorConverter.colors['cassum:blue'] = "#3b8ce2"
+
+matplotlib.colors.cnames['cassum:orange'] = "#e77a35"
+matplotlib.colors.cnames['cassum:blue'] = "#3b8ce2"
+ 5/3:
+from pathlib import Path
+import pandas as pd
+import os
+
+data_dir = Path(os.environ["PARENT_SLURM_DIR"])
+jobs = ["IOPFPlanets20220810", "IOPFPlanets20220820", "IOPFPlanets20220822Narrow", "IOPFPlanets20220927", "IOPFPlanets20220928ALPHA", ]
+
+argfiles = [argfile for job in jobs for argfile in (data_dir / job).glob("*/args.json")]
+sims_records = pd.DataFrame.from_records(pd.read_json(argfile, typ="series") for argfile in argfiles)
+sims_paths = pd.DataFrame.from_records({"run": argfile.parent.name, "path": argfile.parent} for argfile in argfiles)
+sims_df = pd.concat([sims_records, sims_paths], axis="columns")
+
+import matplotlib
+
+matplotlib.colors.ColorConverter.colors['cassum:orange'] = "#e77a35"
+matplotlib.colors.ColorConverter.colors['cassum:blue'] = "#3b8ce2"
+
+matplotlib.colors.cnames['cassum:orange'] = "#e77a35"
+matplotlib.colors.cnames['cassum:blue'] = "#3b8ce2"
+ 5/4:
+from pathlib import Path
+import pandas as pd
+import os
+
+data_dir = Path(os.environ["PARENT_SLURM_DIR"])
+jobs = ["IOPFPlanets20220810", "IOPFPlanets20220820", "IOPFPlanets20220822Narrow", "IOPFPlanets20220927", "IOPFPlanets20220928ALPHA", "IOPFPlanets20220928GRADUAL", "IOPFPlanets20220928SCALETORQUE"]
+
+argfiles = [argfile for job in jobs for argfile in (data_dir / job).glob("*/args.json")]
+sims_records = pd.DataFrame.from_records(pd.read_json(argfile, typ="series") for argfile in argfiles)
+sims_paths = pd.DataFrame.from_records({"run": argfile.parent.name, "path": argfile.parent} for argfile in argfiles)
+sims_df = pd.concat([sims_records, sims_paths], axis="columns")
+
+import matplotlib
+
+matplotlib.colors.ColorConverter.colors['cassum:orange'] = "#e77a35"
+matplotlib.colors.ColorConverter.colors['cassum:blue'] = "#3b8ce2"
+
+matplotlib.colors.cnames['cassum:orange'] = "#e77a35"
+matplotlib.colors.cnames['cassum:blue'] = "#3b8ce2"
+ 5/5:
+from pathlib import Path
+import pandas as pd
+import os
+
+data_dir = Path(os.environ["PARENT_SLURM_DIR"])
+jobs = [
+    "IOPFPlanets20220810",
+    "IOPFPlanets20220820",
+    "IOPFPlanets20220822Narrow",
+    "IOPFPlanets20220927",
+    "IOPFPlanets20220928ALPHA",
+    "IOPFPlanets20220928GRADUAL",
+    "IOPFPlanets20220928SCALETORQUE"
+]
+
+argfiles = [argfile for job in jobs for argfile in (data_dir / job).glob("*/args.json")]
+sims_records = pd.DataFrame.from_records(pd.read_json(argfile, typ="series") for argfile in argfiles)
+sims_paths = pd.DataFrame.from_records({"run": argfile.parent.name, "path": argfile.parent} for argfile in argfiles)
+sims_df = pd.concat([sims_records, sims_paths], axis="columns")
+
+import matplotlib
+
+matplotlib.colors.ColorConverter.colors['cassum:orange'] = "#e77a35"
+matplotlib.colors.ColorConverter.colors['cassum:blue'] = "#3b8ce2"
+
+matplotlib.colors.cnames['cassum:orange'] = "#e77a35"
+matplotlib.colors.cnames['cassum:blue'] = "#3b8ce2"
+ 5/6: sims_df
+ 5/7:
+import rebound
+
+sim_cache = {}
+for i, rebound_path in (sims_df["path"] / sims_df["rebound_archive"]).items():
+    sa = rebound.SimulationArchive(str(rebound_path))
+    final = sa[-1]
+    sim_cache[sims_df.at[i, "run"]] = {
+        "sa": sa,
+        "final": final,
+        "byindex": {
+
+        },
+        "h5path": next(sims_df.at[i, "path"].glob("*.h5"))
+    }
+
+def load_sim_from_cache(run, time):
+    sa = sim_cache[run]["sa"]
+    _i, _ = sa._getSnapshotIndex(time)
+    if _i in sim_cache[run]["byindex"]:
+        return sim_cache[run]["byindex"][_i]
+    else:
+        sim = sa[_i]
+        sim_cache[run]["byindex"][_i] = sim
+        return sim
+ 5/8:
+import numpy as np
+
+NaN = float("NaN")
+
+def FINAL_STATS(sim):
+    final = sim_cache[sim["run"]]["final"]
+    
+    stats = np.array([(p.m, p.a, p.P) for p in final.particles[1:]]).T
+    N = len(stats[0])
+    M_TOT = stats[0].sum()
+
+    top2 = stats[:, np.argsort(stats[0])[-1:-3:-1]]
+    if N < 2:
+        top2 = np.column_stack([top2, np.full_like(top2, NaN)])
+    
+    m, a, P = top2  
+
+    return pd.Series({
+        "FINAL_N": N,
+        "FINAL_M_TOT": M_TOT,
+
+        "FINAL_M_PRI": m[0],
+        "FINAL_P_PRI": P[0],
+        "FINAL_A_PRI": a[0],
+
+        "FINAL_M_SEC": m[1],
+        "FINAL_P_SEC": P[1],
+        "FINAL_A_SEC": a[1],
+
+        "FINAL_M_RAT_PRI_TOT": m[0] / M_TOT,
+        "FINAL_M_RAT_SEC_TOT": m[1] / M_TOT,
+        "FINAL_M_RAT_PRI_SEC": m[0] / m[1],
+        "FINAL_P_RAT_PRI_SEC": P[0] / P[1],
+    })
+
+final_df = sims_df.apply(FINAL_STATS, axis=1)
+final_df["FINAL_N"] = final_df["FINAL_N"].astype(np.int_)
+sims_ext_df = sims_df.join(final_df)
+sims_ext_df
+ 5/9: sims_ext_df[sims_ext_df["C_d"] > 0.4 & sims_ext_df["migration_torque"]]
+5/10: sims_ext_df[sims_ext_df["C_d"] > 0.4 and sims_ext_df["migration_torque"]]
+5/11: sims_ext_df[s(ims_ext_df["C_d"] > 0.4) & sims_ext_df["migration_torque"]]
+5/12: sims_ext_df[(sims_ext_df["C_d"] > 0.4) & sims_ext_df["migration_torque"]]
+5/13: sims_ext_df = sims_ext_df[(sims_ext_df["C_d"] > 0.4) & sims_ext_df["migration_torque"]]
+5/14:
+# Select only torque and drag on cases
+
+sims_ext_df = sims_ext_df[(sims_ext_df["C_d"] > 0.4) & sims_ext_df["migration_torque"]]
+5/15:
+# Select only torque and drag on cases
+
+sims_ext_df = sims_ext_df[(sims_ext_df["C_d"] > 0.4) & sims_ext_df["migration_torque"]]
+
+# Define our grouping function
+def custom_grouper(label):
+    row = sims_ext_df[label]
+    if row["pa_rate"] != 0.0:
+        return "pebble_accretion"
+    if row["alpha"] == "-4":
+        return "steep_alpha"
+    if row["introduction_time"] == 
+    return "drag_torque"
+5/16:
+# Select only torque and drag on cases
+
+sims_ext_df = sims_ext_df[(sims_ext_df["C_d"] > 0.4) & sims_ext_df["migration_torque"]]
+
+# Define our grouping function
+def custom_grouper(label):
+    row = sims_ext_df[label]
+    if row["pa_rate"] != 0.0:
+        return "pebble_accretion"
+    if row["alpha"] == "-4":
+        return "steep_alpha"
+    if row["introduction_time"] == 300000.0:
+        return "gradual_introduction"
+    if row["torque_scale"] == 100.0:
+        return "scale_torque_100"
+    if row["torque_scale"] == 10.0:
+        return "scale_torque_10"
+    return "drag_torque"
+5/17:
+# groups = sims_ext_df.groupby(["pa_beta", "alpha", ""])
+
+groups = sims_ext_df.groupby(custom_grouper)
+
+mins = groups.min().add_suffix("_MIN")
+maxes = groups.max().add_suffix("_MAX")
+means = groups.mean().add_suffix("_MEAN")
+medians = groups.median().add_suffix("_MEDIAN")
+
+summary = pd.concat([mins, maxes, means, medians], axis=1).filter(like="FINAL")
+summary
+5/18:
+# Select only torque and drag on cases
+
+sims_ext_df = sims_ext_df[(sims_ext_df["C_d"] > 0.4) & sims_ext_df["migration_torque"]]
+sims_ext_df.reset_index(drop=True)
+
+# Define our grouping function
+def custom_grouper(label):
+    row = sims_ext_df[label]
+    if row["pa_rate"] != 0.0:
+        return "pebble_accretion"
+    if row["alpha"] == "-4":
+        return "steep_alpha"
+    if row["introduction_time"] == 300000.0:
+        return "gradual_introduction"
+    if row["torque_scale"] == 100.0:
+        return "scale_torque_100"
+    if row["torque_scale"] == 10.0:
+        return "scale_torque_10"
+    return "drag_torque"
+5/19:
+# groups = sims_ext_df.groupby(["pa_beta", "alpha", ""])
+
+groups = sims_ext_df.groupby(custom_grouper)
+
+mins = groups.min().add_suffix("_MIN")
+maxes = groups.max().add_suffix("_MAX")
+means = groups.mean().add_suffix("_MEAN")
+medians = groups.median().add_suffix("_MEDIAN")
+
+summary = pd.concat([mins, maxes, means, medians], axis=1).filter(like="FINAL")
+summary
+5/20:
+# Select only torque and drag on cases
+
+sims_ext_df = sims_ext_df[(sims_ext_df["C_d"] > 0.4) & sims_ext_df["migration_torque"]]
+sims_ext_df.reset_index(drop=True)
+
+# Define our grouping function
+def custom_grouper(label):
+    print(label)
+    row = sims_ext_df[label]
+    if row["pa_rate"] != 0.0:
+        return "pebble_accretion"
+    if row["alpha"] == "-4":
+        return "steep_alpha"
+    if row["introduction_time"] == 300000.0:
+        return "gradual_introduction"
+    if row["torque_scale"] == 100.0:
+        return "scale_torque_100"
+    if row["torque_scale"] == 10.0:
+        return "scale_torque_10"
+    return "drag_torque"
+5/21:
+# groups = sims_ext_df.groupby(["pa_beta", "alpha", ""])
+
+groups = sims_ext_df.groupby(custom_grouper)
+
+mins = groups.min().add_suffix("_MIN")
+maxes = groups.max().add_suffix("_MAX")
+means = groups.mean().add_suffix("_MEAN")
+medians = groups.median().add_suffix("_MEDIAN")
+
+summary = pd.concat([mins, maxes, means, medians], axis=1).filter(like="FINAL")
+summary
+5/22:
+# Select only torque and drag on cases
+
+sims_ext_df = sims_ext_df[(sims_ext_df["C_d"] > 0.4) & sims_ext_df["migration_torque"]]
+sims_ext_df.reset_index(drop=True)
+
+# Define our grouping function
+def custom_grouper(label):
+    row = sims_ext_df.iloc[label]
+    if row["pa_rate"] != 0.0:
+        return "pebble_accretion"
+    if row["alpha"] == "-4":
+        return "steep_alpha"
+    if row["introduction_time"] == 300000.0:
+        return "gradual_introduction"
+    if row["torque_scale"] == 100.0:
+        return "scale_torque_100"
+    if row["torque_scale"] == 10.0:
+        return "scale_torque_10"
+    return "drag_torque"
+5/23:
+# groups = sims_ext_df.groupby(["pa_beta", "alpha", ""])
+
+groups = sims_ext_df.groupby(custom_grouper)
+
+mins = groups.min().add_suffix("_MIN")
+maxes = groups.max().add_suffix("_MAX")
+means = groups.mean().add_suffix("_MEAN")
+medians = groups.median().add_suffix("_MEDIAN")
+
+summary = pd.concat([mins, maxes, means, medians], axis=1).filter(like="FINAL")
+summary
+5/24:
+# Select only torque and drag on cases
+
+sims_ext_df = sims_ext_df[(sims_ext_df["C_d"] > 0.4) & sims_ext_df["migration_torque"]]
+sims_ext_df.reset_index(drop=True)
+
+# Define our grouping function
+def custom_grouper(label):
+    print(label)
+    row = sims_ext_df.iloc[label]
+    if row["pa_rate"] != 0.0:
+        return "pebble_accretion"
+    if row["alpha"] == "-4":
+        return "steep_alpha"
+    if row["introduction_time"] == 300000.0:
+        return "gradual_introduction"
+    if row["torque_scale"] == 100.0:
+        return "scale_torque_100"
+    if row["torque_scale"] == 10.0:
+        return "scale_torque_10"
+    return "drag_torque"
+5/25:
+# groups = sims_ext_df.groupby(["pa_beta", "alpha", ""])
+
+groups = sims_ext_df.groupby(custom_grouper)
+
+mins = groups.min().add_suffix("_MIN")
+maxes = groups.max().add_suffix("_MAX")
+means = groups.mean().add_suffix("_MEAN")
+medians = groups.median().add_suffix("_MEDIAN")
+
+summary = pd.concat([mins, maxes, means, medians], axis=1).filter(like="FINAL")
+summary
+5/26:
+import numpy as np
+
+NaN = float("NaN")
+
+def FINAL_STATS(sim):
+    final = sim_cache[sim["run"]]["final"]
+    
+    stats = np.array([(p.m, p.a, p.P) for p in final.particles[1:]]).T
+    N = len(stats[0])
+    M_TOT = stats[0].sum()
+
+    top2 = stats[:, np.argsort(stats[0])[-1:-3:-1]]
+    if N < 2:
+        top2 = np.column_stack([top2, np.full_like(top2, NaN)])
+    
+    m, a, P = top2  
+
+    return pd.Series({
+        "FINAL_N": N,
+        "FINAL_M_TOT": M_TOT,
+
+        "FINAL_M_PRI": m[0],
+        "FINAL_P_PRI": P[0],
+        "FINAL_A_PRI": a[0],
+
+        "FINAL_M_SEC": m[1],
+        "FINAL_P_SEC": P[1],
+        "FINAL_A_SEC": a[1],
+
+        "FINAL_M_RAT_PRI_TOT": m[0] / M_TOT,
+        "FINAL_M_RAT_SEC_TOT": m[1] / M_TOT,
+        "FINAL_M_RAT_PRI_SEC": m[0] / m[1],
+        "FINAL_P_RAT_PRI_SEC": P[0] / P[1],
+    })
+
+final_df = sims_df.apply(FINAL_STATS, axis=1)
+final_df["FINAL_N"] = final_df["FINAL_N"].astype(np.int_)
+sims_ext_df = sims_df.join(final_df)
+sims_ext_df
+5/27:
+# Select only torque and drag on cases
+
+sims_ext_df = sims_ext_df[(sims_ext_df["C_d"] > 0.4) & sims_ext_df["migration_torque"]]
+
+# Define our grouping function
+def custom_grouper(label):
+    print(label)
+    row = sims_ext_df.loc[label]
+    if row["pa_rate"] != 0.0:
+        return "pebble_accretion"
+    if row["alpha"] == "-4":
+        return "steep_alpha"
+    if row["introduction_time"] == 300000.0:
+        return "gradual_introduction"
+    if row["torque_scale"] == 100.0:
+        return "scale_torque_100"
+    if row["torque_scale"] == 10.0:
+        return "scale_torque_10"
+    return "drag_torque"
+5/28:
+# groups = sims_ext_df.groupby(["pa_beta", "alpha", ""])
+
+groups = sims_ext_df.groupby(custom_grouper)
+
+mins = groups.min().add_suffix("_MIN")
+maxes = groups.max().add_suffix("_MAX")
+means = groups.mean().add_suffix("_MEAN")
+medians = groups.median().add_suffix("_MEDIAN")
+
+summary = pd.concat([mins, maxes, means, medians], axis=1).filter(like="FINAL")
+summary
+5/29:
+# Select only torque and drag on cases
+
+sims_ext_df = sims_ext_df[(sims_ext_df["C_d"] > 0.4) & sims_ext_df["migration_torque"]]
+
+# Define our grouping function
+def custom_grouper(label):
+    row = sims_ext_df.loc[label]
+    if row["pa_rate"] != 0.0:
+        return "pebble_accretion"
+    if row["alpha"] == "-4":
+        return "steep_alpha"
+    if row["introduction_time"] == 300000.0:
+        return "gradual_introduction"
+    if row["torque_scale"] == 100.0:
+        return "scale_torque_100"
+    if row["torque_scale"] == 10.0:
+        return "scale_torque_10"
+    return "drag_torque"
+5/30:
+# groups = sims_ext_df.groupby(["pa_beta", "alpha", ""])
+
+groups = sims_ext_df.groupby(custom_grouper)
+
+mins = groups.min().add_suffix("_MIN")
+maxes = groups.max().add_suffix("_MAX")
+means = groups.mean().add_suffix("_MEAN")
+medians = groups.median().add_suffix("_MEDIAN")
+
+summary = pd.concat([mins, maxes, means, medians], axis=1).filter(like="FINAL")
+summary
+5/31:
+import numpy as np
+
+NaN = float("NaN")
+
+def FINAL_STATS(sim):
+    final = sim_cache[sim["run"]]["final"]
+    
+    stats = np.array([(p.m, p.a, p.P) for p in final.particles[1:]]).T
+    N = len(stats[0])
+    M_TOT = stats[0].sum()
+
+    top2 = stats[:, np.argsort(stats[0])[-1:-3:-1]]
+    if N < 2:
+        top2 = np.column_stack([top2, np.full_like(top2, NaN)])
+    
+    m, a, P = top2  
+
+    return pd.Series({
+        "FINAL_N": N,
+        "FINAL_M_TOT": M_TOT,
+
+        # "FINAL_M_PRI": m[0],
+        # "FINAL_P_PRI": P[0],
+        # "FINAL_A_PRI": a[0],
+
+        # "FINAL_M_SEC": m[1],
+        # "FINAL_P_SEC": P[1],
+        # "FINAL_A_SEC": a[1],
+
+        "FINAL_M_RAT_PRI_TOT": m[0] / M_TOT,
+        # "FINAL_M_RAT_SEC_TOT": m[1] / M_TOT,
+        # "FINAL_M_RAT_PRI_SEC": m[0] / m[1],
+        # "FINAL_P_RAT_PRI_SEC": P[0] / P[1],
+    })
+
+final_df = sims_df.apply(FINAL_STATS, axis=1)
+final_df["FINAL_N"] = final_df["FINAL_N"].astype(np.int_)
+sims_ext_df = sims_df.join(final_df)
+sims_ext_df
+5/32:
+# Select only torque and drag on cases
+
+sims_ext_df = sims_ext_df[(sims_ext_df["C_d"] > 0.4) & sims_ext_df["migration_torque"]]
+
+# Define our grouping function
+def custom_grouper(label):
+    row = sims_ext_df.loc[label]
+    if row["pa_rate"] != 0.0:
+        return "pebble_accretion"
+    if row["alpha"] == "-4":
+        return "steep_alpha"
+    if row["introduction_time"] == 300000.0:
+        return "gradual_introduction"
+    if row["torque_scale"] == 100.0:
+        return "scale_torque_100"
+    if row["torque_scale"] == 10.0:
+        return "scale_torque_10"
+    return "drag_torque"
+5/33:
+# groups = sims_ext_df.groupby(["pa_beta", "alpha", ""])
+
+groups = sims_ext_df.groupby(custom_grouper)
+
+mins = groups.min().add_suffix("_MIN")
+maxes = groups.max().add_suffix("_MAX")
+means = groups.mean().add_suffix("_MEAN")
+medians = groups.median().add_suffix("_MEDIAN")
+
+summary = pd.concat([mins, maxes, means, medians], axis=1).filter(like="FINAL")
+summary
+5/34:
+# groups = sims_ext_df.groupby(["pa_beta", "alpha", ""])
+
+groups = sims_ext_df.groupby(custom_grouper)
+
+# mins = groups.min().add_suffix("_MIN")
+# maxes = groups.max().add_suffix("_MAX")
+means = groups.mean().add_suffix("_MEAN")
+# medians = groups.median().add_suffix("_MEDIAN")
+
+summary = pd.concat([
+    # mins,
+    # maxes,
+    means,
+    # medians,
+], axis=1).filter(like="FINAL")
+summary
+5/35:
+# groups = sims_ext_df.groupby(["pa_beta", "alpha", ""])
+
+groups = sims_ext_df.groupby(custom_grouper)
+
+# mins = groups.min().add_suffix("_MIN")
+# maxes = groups.max().add_suffix("_MAX")
+means = groups.mean().add_suffix("_MEAN")
+# medians = groups.median().add_suffix("_MEDIAN")
+
+counts = groups.count().add_suffix("_FINAL_COUNT")
+
+summary = pd.concat([
+    # mins,
+    # maxes,
+    means,
+    counts,
+    # medians,
+], axis=1).filter(like="FINAL")
+summary
+5/36:
+# groups = sims_ext_df.groupby(["pa_beta", "alpha", ""])
+
+groups = sims_ext_df.groupby(custom_grouper)
+
+# mins = groups.min().add_suffix("_MIN")
+# maxes = groups.max().add_suffix("_MAX")
+means = groups.mean().add_suffix("_MEAN")
+# medians = groups.median().add_suffix("_MEDIAN")
+
+counts = groups.size().add_suffix("_FINAL_COUNT")
+
+summary = pd.concat([
+    # mins,
+    # maxes,
+    means,
+    counts,
+    # medians,
+], axis=1).filter(like="FINAL")
+summary
+5/37:
+# groups = sims_ext_df.groupby(["pa_beta", "alpha", ""])
+
+groups = sims_ext_df.groupby(custom_grouper)
+
+# mins = groups.min().add_suffix("_MIN")
+# maxes = groups.max().add_suffix("_MAX")
+means = groups.mean().add_suffix("_MEAN")
+# medians = groups.median().add_suffix("_MEDIAN")
+
+counts = groups.size().reset_index(name='FINAL_COUNT')
+
+summary = pd.concat([
+    # mins,
+    # maxes,
+    means,
+    counts,
+    # medians,
+], axis=1).filter(like="FINAL")
+summary
+5/38:
+# groups = sims_ext_df.groupby(["pa_beta", "alpha", ""])
+
+groups = sims_ext_df.groupby(custom_grouper)
+
+# mins = groups.min().add_suffix("_MIN")
+# maxes = groups.max().add_suffix("_MAX")
+# means = groups.mean().add_suffix("_MEAN")
+# medians = groups.median().add_suffix("_MEDIAN")
+
+# summary = pd.concat([
+#     # mins,
+#     # maxes,
+#     # means,
+#     # medians,
+# ], axis=1).filter(like="FINAL")
+
+summary = groups.agg([
+    "mean",
+    "count"
+])
+
+summary
+5/39:
+# groups = sims_ext_df.groupby(["pa_beta", "alpha", ""])
+
+groups = sims_ext_df.groupby(custom_grouper)
+
+# mins = groups.min().add_suffix("_MIN")
+# maxes = groups.max().add_suffix("_MAX")
+# means = groups.mean().add_suffix("_MEAN")
+# medians = groups.median().add_suffix("_MEDIAN")
+
+# summary = pd.concat([
+#     # mins,
+#     # maxes,
+#     # means,
+#     # medians,
+# ], axis=1).filter(like="FINAL")
+
+summary = groups.agg([
+    "mean",
+    "count"
+]).filter(like="FINAL")
+
+summary
+5/40:
+# groups = sims_ext_df.groupby(["pa_beta", "alpha", ""])
+
+groups = sims_ext_df.groupby(custom_grouper)
+
+# mins = groups.min().add_suffix("_MIN")
+# maxes = groups.max().add_suffix("_MAX")
+# means = groups.mean().add_suffix("_MEAN")
+# medians = groups.median().add_suffix("_MEDIAN")
+
+# summary = pd.concat([
+#     # mins,
+#     # maxes,
+#     # means,
+#     # medians,
+# ], axis=1).filter(like="FINAL")
+
+summary = groups.filter(like="FINAL")
+
+summary
+5/41:
+# groups = sims_ext_df.groupby(["pa_beta", "alpha", ""])
+
+groups = sims_ext_df.groupby(custom_grouper)
+
+# mins = groups.min().add_suffix("_MIN")
+# maxes = groups.max().add_suffix("_MAX")
+# means = groups.mean().add_suffix("_MEAN")
+# medians = groups.median().add_suffix("_MEDIAN")
+
+# summary = pd.concat([
+#     # mins,
+#     # maxes,
+#     # means,
+#     # medians,
+# ], axis=1).filter(like="FINAL")
+
+summary = groups.agg([
+    "mean",
+    "count"
+]).filter(like="FINAL")
+
+summary
+5/42:
+# groups = sims_ext_df.groupby(["pa_beta", "alpha", ""])
+
+groups = sims_ext_df.groupby(custom_grouper)
+
+# mins = groups.min().add_suffix("_MIN")
+# maxes = groups.max().add_suffix("_MAX")
+# means = groups.mean().add_suffix("_MEAN")
+# medians = groups.median().add_suffix("_MEDIAN")
+
+# summary = pd.concat([
+#     # mins,
+#     # maxes,
+#     # means,
+#     # medians,
+# ], axis=1).filter(like="FINAL")
+
+summary = groups.agg([
+    "mean",
+    "count"
+]).filter(like="FINAL")
+
+summary
+5/43:
+# groups = sims_ext_df.groupby(["pa_beta", "alpha", ""])
+
+groups = sims_ext_df.groupby(custom_grouper)
+
+# mins = groups.min().add_suffix("_MIN")
+# maxes = groups.max().add_suffix("_MAX")
+# means = groups.mean().add_suffix("_MEAN")
+# medians = groups.median().add_suffix("_MEDIAN")
+
+# summary = pd.concat([
+#     # mins,
+#     # maxes,
+#     # means,
+#     # medians,
+# ], axis=1).filter(like="FINAL")
+
+summary = groups.agg([
+    "min",
+    "max",
+    "mean",
+    "median"
+]).filter(like="FINAL")
+
+summary
+5/44:
+# groups = sims_ext_df.groupby(["pa_beta", "alpha", ""])
+
+groups = sims_ext_df.groupby(custom_grouper)
+
+# mins = groups.min().add_suffix("_MIN")
+# maxes = groups.max().add_suffix("_MAX")
+# means = groups.mean().add_suffix("_MEAN")
+# medians = groups.median().add_suffix("_MEDIAN")
+
+# summary = pd.concat([
+#     # mins,
+#     # maxes,
+#     # means,
+#     # medians,
+# ], axis=1).filter(like="FINAL")
+
+summary = groups.agg([
+    "min",
+    "max",
+    "mean",
+    "median",
+    "count"
+]).filter(like="FINAL")
+
+summary
+5/45:
+# groups = sims_ext_df.groupby(["pa_beta", "alpha", ""])
+
+groups = sims_ext_df.groupby(custom_grouper, dropna=False)
+
+# mins = groups.min().add_suffix("_MIN")
+# maxes = groups.max().add_suffix("_MAX")
+# means = groups.mean().add_suffix("_MEAN")
+# medians = groups.median().add_suffix("_MEDIAN")
+
+# summary = pd.concat([
+#     # mins,
+#     # maxes,
+#     # means,
+#     # medians,
+# ], axis=1).filter(like="FINAL")
+
+summary = groups.agg([
+    "min",
+    "max",
+    "mean",
+    "median",
+    "count"
+]).filter(like="FINAL")
+
+summary
+5/46:
+# groups = sims_ext_df.groupby(["pa_beta", "alpha", ""])
+
+groups = sims_ext_df.groupby(custom_grouper, dropna=True)
+
+# mins = groups.min().add_suffix("_MIN")
+# maxes = groups.max().add_suffix("_MAX")
+# means = groups.mean().add_suffix("_MEAN")
+# medians = groups.median().add_suffix("_MEDIAN")
+
+# summary = pd.concat([
+#     # mins,
+#     # maxes,
+#     # means,
+#     # medians,
+# ], axis=1).filter(like="FINAL")
+
+summary = groups.agg([
+    "min",
+    "max",
+    "mean",
+    "median",
+    "count"
+]).filter(like="FINAL")
+
+summary
+5/47:
+# groups = sims_ext_df.groupby(["pa_beta", "alpha", ""])
+
+groups = sims_ext_df.groupby(custom_grouper)
+
+# mins = groups.min().add_suffix("_MIN")
+# maxes = groups.max().add_suffix("_MAX")
+# means = groups.mean().add_suffix("_MEAN")
+# medians = groups.median().add_suffix("_MEDIAN")
+
+# summary = pd.concat([
+#     # mins,
+#     # maxes,
+#     # means,
+#     # medians,
+# ], axis=1).filter(like="FINAL")
+
+summary = groups.agg([
+    "min",
+    "max",
+    "mean",
+    "median",
+    "count"
+]).filter(like="FINAL")
+
+summary
+5/48:
+# groups = sims_ext_df.groupby(["pa_beta", "alpha", ""])
+
+groups = sims_ext_df.groupby(custom_grouper)
+dgroups = dict(list(groups))
+
+# mins = groups.min().add_suffix("_MIN")
+# maxes = groups.max().add_suffix("_MAX")
+# means = groups.mean().add_suffix("_MEAN")
+# medians = groups.median().add_suffix("_MEDIAN")
+
+# summary = pd.concat([
+#     # mins,
+#     # maxes,
+#     # means,
+#     # medians,
+# ], axis=1).filter(like="FINAL")
+
+summary = groups.agg([
+    "min",
+    "max",
+    "mean",
+    "median",
+    "count"
+]).filter(like="FINAL")
+
+summary
+5/49:
+Ts = np.concatenate([
+    np.arange(0.0, 1000, 10.0),
+    np.arange(1000.0, 100000.0, 1000.0),
+    np.arange(100000.0, 1000000.0, 10000.0),
+    np.arange(1000000.0, 2000000+1, 100000.0)]
+)
+
+targets = [
+    "drag_torque",
+    "gradual_introduction",
+    "pebble_accretion"
+]
+
+target_data = [(dgroups[target], np.empty((32, len(Ts), 4))) for target in targets]
+
+for df, dest in target_data:
+    for i, row in df.reset_index().iterrows():
+        p = str(row["path"] / row["rebound_archive"])
+        sa = rebound.SimulationArchive(p)
+        for j, t in enumerate(Ts):
+            sim = sa.getSimulation(t)
+            dest[i, j, 0] = sim.N - 1
+
+            m, a = np.array([(p.m, p.a) for p in sim.particles[1:]]).T
+            ipri = np.argmax(m)
+            dest[i, j, 1] = m[ipri] / np.sum(m)
+            wstd = np.sqrt(np.sum(m * (a - np.average(a, weights=m))**2) / sum(m * a))
+            dest[i, j, 2] = wstd
+
+target_means = [np.mean(dest, axis=0) for _, dest in target_data]
+5/50: target_means
+5/51: len(target_means)
+5/52:
+Ts = np.concatenate([
+    np.arange(0.0, 1000, 10.0),
+    np.arange(1000.0, 100000.0, 1000.0),
+    np.arange(100000.0, 1000000.0, 10000.0),
+    np.arange(1000000.0, 2000000+1, 100000.0)]
+)
+
+targets = [
+    "drag_torque",
+    "gradual_introduction",
+    "pebble_accretion"
+]
+
+target_data = [(target, dgroups[target], np.empty((32, len(Ts), 4))) for target in targets]
+
+for _, df, dest in target_data:
+    for i, row in df.reset_index().iterrows():
+        p = str(row["path"] / row["rebound_archive"])
+        sa = rebound.SimulationArchive(p)
+        for j, t in enumerate(Ts):
+            sim = sa.getSimulation(t)
+            dest[i, j, 0] = sim.N - 1
+
+            m, a = np.array([(p.m, p.a) for p in sim.particles[1:]]).T
+            ipri = np.argmax(m)
+            dest[i, j, 1] = m[ipri] / np.sum(m)
+            wstd = np.sqrt(np.sum(m * (a - np.average(a, weights=m))**2) / sum(m * a))
+            dest[i, j, 2] = wstd
+
+target_means = [np.mean(dest, axis=0) for _, _, dest in target_data]
+5/53:
+import matplotlib.pyplot as plt
+from matplotlib.rcsetup import cycler
+
+fg = "#ccc"
+
+plt.rc("axes", prop_cycle=cycler(color=["3b8ce2"]), facecolor="202020", labelcolor=fg, edgecolor=fg)
+plt.rc("figure", facecolor="none")
+plt.rc("xtick", color=fg, labelcolor=fg)
+plt.rc("ytick", color=fg, labelcolor=fg)
+plt.rc("text", color=fg)
+
+target_colors = [
+    "cassum:orange",
+    "cassum:blue",
+    "tab:red",
+    "tab:green"
+]
+
+fig, axs = plt.subplots(2, 2, figsize=(11, 8), sharex=True, sharey="col")
+target_handles = []
+
+for col in range(2):
+    ax = axs[1, col]
+
+    for (target, _, _), mean, color in zip(target_data, target_means, target_colors):
+        l = ax.plot(Ts, mean[:, col], color=color, label=target)
+        target_handles.append(l)
+
+    ax.set_xlabel(r"$t$ [yr]")
+
+    ax = axs[0, col]
+
+    for (target, _, dest), _, color in zip(target_data, target_means, target_colors):
+        for row in dest:
+            ax.plot(Ts, row[:, col], color=color, alpha=0.2)
+
+
+# ax.set_ylabel(r"Number of suriving planets")
+
+ax = axs[0][0]
+ax.set_xscale("log")
+ax.set_xlim(5, 2000000.0)
+ax.set_yscale("log")
+ax.set_title("Number of remaining planets")
+
+ax.set_ylabel("All simulations")
+
+axs[0][1].set_title("Mass of primary planet $M_{\\mathrm{pri}}$")
+# axs[0][1].set_ylim(0, 0.1)
+
+# axs[0][2].set_title("Weighted mean $i$")
+# axs[0][2].set_ylim(0, 0.05)
+
+axs[1][0].set_ylabel("Mean of simulations")
+
+for ax in np.ravel(axs):
+    ax.legend(handles=target_handles)
+    ax.grid(which="both", axis="y", alpha=0.2)
+
+fig.tight_layout()
+5/54:
+import matplotlib.pyplot as plt
+from matplotlib.rcsetup import cycler
+
+fg = "#ccc"
+
+plt.rc("axes", prop_cycle=cycler(color=["3b8ce2"]), facecolor="202020", labelcolor=fg, edgecolor=fg)
+plt.rc("figure", facecolor="none")
+plt.rc("xtick", color=fg, labelcolor=fg)
+plt.rc("ytick", color=fg, labelcolor=fg)
+plt.rc("text", color=fg)
+
+target_colors = [
+    "cassum:orange",
+    "cassum:blue",
+    "tab:red",
+    "tab:green"
+]
+
+fig, axs = plt.subplots(2, 2, figsize=(11, 8), sharex=True, sharey="col")
+target_handles = []
+
+for col in range(2):
+    ax = axs[1, col]
+
+    for (target, _, _), mean, color in zip(target_data, target_means, target_colors):
+        l = ax.plot(Ts, mean[:, col], color=color, label=target)
+        target_handles.append(l[0])
+
+    ax.set_xlabel(r"$t$ [yr]")
+
+    ax = axs[0, col]
+
+    for (target, _, dest), _, color in zip(target_data, target_means, target_colors):
+        for row in dest:
+            ax.plot(Ts, row[:, col], color=color, alpha=0.2)
+
+
+# ax.set_ylabel(r"Number of suriving planets")
+
+ax = axs[0][0]
+ax.set_xscale("log")
+ax.set_xlim(5, 2000000.0)
+ax.set_yscale("log")
+ax.set_title("Number of remaining planets")
+
+ax.set_ylabel("All simulations")
+
+axs[0][1].set_title("Mass of primary planet $M_{\\mathrm{pri}}$")
+# axs[0][1].set_ylim(0, 0.1)
+
+# axs[0][2].set_title("Weighted mean $i$")
+# axs[0][2].set_ylim(0, 0.05)
+
+axs[1][0].set_ylabel("Mean of simulations")
+
+for ax in np.ravel(axs):
+    ax.legend(handles=target_handles)
+    ax.grid(which="both", axis="y", alpha=0.2)
+
+fig.tight_layout()
+5/55:
+import matplotlib.pyplot as plt
+from matplotlib.rcsetup import cycler
+
+fg = "#ccc"
+
+plt.rc("axes", prop_cycle=cycler(color=["3b8ce2"]), facecolor="202020", labelcolor=fg, edgecolor=fg)
+plt.rc("figure", facecolor="none")
+plt.rc("xtick", color=fg, labelcolor=fg)
+plt.rc("ytick", color=fg, labelcolor=fg)
+plt.rc("text", color=fg)
+
+target_colors = [
+    "cassum:orange",
+    "cassum:blue",
+    "tab:red",
+    "tab:green"
+]
+
+fig, axs = plt.subplots(2, 2, figsize=(11, 8), sharex=True, sharey="col")
+target_handles = []
+
+for col in range(2):
+    ax = axs[1, col]
+
+    for (target, _, _), mean, color in zip(target_data, target_means, target_colors):
+        l = ax.plot(Ts, mean[:, col], color=color, label=target)
+        target_handles.append(l[0])
+
+    ax.set_xlabel(r"$t$ [yr]")
+
+    ax = axs[0, col]
+
+    for (target, _, dest), _, color in zip(target_data, target_means, target_colors):
+        for row in dest:
+            ax.plot(Ts, row[:, col], color=color, alpha=0.2)
+
+
+# ax.set_ylabel(r"Number of suriving planets")
+
+ax = axs[0][0]
+ax.set_xscale("log")
+ax.set_xlim(5, 2000000.0)
+ax.set_yscale("log")
+ax.set_title("Number of remaining planets")
+
+ax.set_ylabel("All simulations")
+
+axs[0][1].set_title("Mass of primary planet $M_{\\mathrm{pri}}$")
+# axs[0][1].set_ylim(0, 0.1)
+
+# axs[0][2].set_title("Weighted mean $i$")
+# axs[0][2].set_ylim(0, 0.05)
+
+axs[1][0].set_ylabel("Mean of simulations")
+
+for ax in np.ravel(axs):
+    ax.legend(handles=target_handles)
+    ax.grid(which="both", axis="y", alpha=0.2)
+
+fig.tight_layout()
+
+plt.show()
+5/56: %matplotlib
+5/57: %matplotlib inline
+5/58:
+import matplotlib.pyplot as plt
+from matplotlib.rcsetup import cycler
+
+fg = "#ccc"
+
+plt.rc("axes", prop_cycle=cycler(color=["3b8ce2"]), facecolor="202020", labelcolor=fg, edgecolor=fg)
+plt.rc("figure", facecolor="none")
+plt.rc("xtick", color=fg, labelcolor=fg)
+plt.rc("ytick", color=fg, labelcolor=fg)
+plt.rc("text", color=fg)
+
+target_colors = [
+    "cassum:orange",
+    "cassum:blue",
+    "tab:red",
+    "tab:green"
+]
+
+fig, axs = plt.subplots(2, 2, figsize=(11, 8), sharex=True, sharey="col")
+target_handles = []
+
+for col in range(2):
+    ax = axs[1, col]
+
+    for (target, _, _), mean, color in zip(target_data, target_means, target_colors):
+        l = ax.plot(Ts, mean[:, col], color=color, label=target)
+        target_handles.append(l[0])
+
+    ax.set_xlabel(r"$t$ [yr]")
+
+    ax = axs[0, col]
+
+    for (target, _, dest), _, color in zip(target_data, target_means, target_colors):
+        for row in dest:
+            ax.plot(Ts, row[:, col], color=color, alpha=0.2)
+
+
+# ax.set_ylabel(r"Number of suriving planets")
+
+ax = axs[0][0]
+ax.set_xscale("log")
+ax.set_xlim(5, 2000000.0)
+ax.set_yscale("log")
+ax.set_title("Number of remaining planets")
+
+ax.set_ylabel("All simulations")
+
+axs[0][1].set_title("Mass of primary planet $M_{\\mathrm{pri}}$")
+# axs[0][1].set_ylim(0, 0.1)
+
+# axs[0][2].set_title("Weighted mean $i$")
+# axs[0][2].set_ylim(0, 0.05)
+
+axs[1][0].set_ylabel("Mean of simulations")
+
+for ax in np.ravel(axs):
+    ax.legend(handles=target_handles)
+    ax.grid(which="both", axis="y", alpha=0.2)
+
+fig.tight_layout()
+
+plt.show()
+5/59:
+import matplotlib.pyplot as plt
+from matplotlib.rcsetup import cycler
+
+fg = "#ccc"
+
+plt.rc("axes", prop_cycle=cycler(color=["3b8ce2"]), facecolor="202020", labelcolor=fg, edgecolor=fg)
+plt.rc("figure", facecolor="none")
+plt.rc("xtick", color=fg, labelcolor=fg)
+plt.rc("ytick", color=fg, labelcolor=fg)
+plt.rc("text", color=fg)
+
+target_colors = [
+    "cassum:orange",
+    "cassum:blue",
+    "tab:red",
+    "tab:green"
+]
+
+fig, axs = plt.subplots(2, 2, figsize=(11, 8), sharex=True, sharey="col")
+target_handles = []
+
+for col in range(2):
+    ax = axs[1, col]
+
+    for (target, _, _), mean, color in zip(target_data, target_means, target_colors):
+        l = ax.plot(Ts, mean[:, col], color=color, label=target)
+        target_handles.append(l[0])
+
+    ax.set_xlabel(r"$t$ [yr]")
+
+    ax = axs[0, col]
+
+    for (target, _, dest), _, color in zip(target_data, target_means, target_colors):
+        for row in dest:
+            ax.plot(Ts, row[:, col], color=color, alpha=0.2)
+
+
+# ax.set_ylabel(r"Number of suriving planets")
+
+ax = axs[0][0]
+ax.set_xscale("log")
+ax.set_xlim(5, 2000000.0)
+ax.set_yscale("log")
+ax.set_title("Number of remaining planets")
+
+ax.set_ylabel("All simulations")
+
+axs[0][1].set_title("Mass of primary planet $M_{\\mathrm{pri}}$")
+# axs[0][1].set_ylim(0, 0.1)
+
+# axs[0][2].set_title("Weighted mean $i$")
+# axs[0][2].set_ylim(0, 0.05)
+
+axs[1][0].set_ylabel("Mean of simulations")
+
+for ax in np.ravel(axs):
+    ax.legend(handles=target_handles[:3])
+    ax.grid(which="both", axis="y", alpha=0.2)
+
+fig.tight_layout()
+
+plt.show()
+5/60:
+import matplotlib.pyplot as plt
+from matplotlib.rcsetup import cycler
+
+fg = "#ccc"
+
+plt.rc("axes", prop_cycle=cycler(color=["3b8ce2"]), facecolor="202020", labelcolor=fg, edgecolor=fg)
+plt.rc("figure", facecolor="none")
+plt.rc("xtick", color=fg, labelcolor=fg)
+plt.rc("ytick", color=fg, labelcolor=fg)
+plt.rc("text", color=fg)
+
+target_colors = [
+    "cassum:orange",
+    "cassum:blue",
+    "tab:red",
+    "tab:green"
+]
+
+fig, axs = plt.subplots(2, 2, figsize=(11, 8), sharex=True, sharey="col")
+target_handles = []
+
+for col in range(2):
+    ax = axs[1, col]
+
+    for (target, _, _), mean, color in zip(target_data, target_means, target_colors):
+        l = ax.plot(Ts, mean[:, col], color=color, label=target)
+        target_handles.append(l[0])
+
+    ax.set_xlabel(r"$t$ [yr]")
+
+    ax = axs[0, col]
+
+    for (target, _, dest), _, color in zip(target_data, target_means, target_colors):
+        for row in dest:
+            ax.plot(Ts, row[:, col], color=color, alpha=0.2)
+
+
+# ax.set_ylabel(r"Number of suriving planets")
+
+ax = axs[0][0]
+ax.set_xscale("log")
+ax.set_xlim(5, 2000000.0)
+ax.set_ylim(0.5, 200)
+ax.set_yscale("log")
+ax.set_title("Number of remaining planets")
+
+ax.set_ylabel("All simulations")
+
+axs[0][1].set_title("Mass of primary planet $M_{\\mathrm{pri}}$")
+# axs[0][1].set_ylim(0, 0.1)
+
+# axs[0][2].set_title("Weighted mean $i$")
+# axs[0][2].set_ylim(0, 0.05)
+
+axs[1][0].set_ylabel("Mean of simulations")
+
+for ax in np.ravel(axs):
+    ax.legend(handles=target_handles[:3])
+    ax.grid(which="both", axis="y", alpha=0.2)
+
+fig.tight_layout()
+
+plt.show()
+5/61: target_data[2]
+5/62: target_data[2][2]
+5/63: target_data[2][2][:, :, 1]
+5/64:
+Ts = np.concatenate([
+    np.arange(0.0, 1000, 10.0),
+    np.arange(1000.0, 100000.0, 1000.0),
+    np.arange(100000.0, 1000000.0, 10000.0),
+    np.arange(1000000.0, 2000000+1, 100000.0)]
+)
+
+targets = [
+    "drag_torque",
+    "gradual_introduction",
+    "pebble_accretion"
+]
+
+target_data = [(target, dgroups[target], np.empty((32, len(Ts), 4))) for target in targets]
+
+for _, df, dest in target_data:
+    for i, row in df.reset_index().iterrows():
+        p = str(row["path"] / row["rebound_archive"])
+        sa = rebound.SimulationArchive(p)
+        for j, t in enumerate(Ts):
+            sim = sa.getSimulation(t)
+            dest[i, j, 0] = sim.N - 1
+
+            m, a = np.array([(p.m, p.a) for p in sim.particles[1:]]).T
+            ipri = np.argmax(m)
+            dest[i, j, 1] = m[ipri] / np.sum(m)
+            if dest[i, j, 1] < 0.10:
+                print(sim.t, m[ipri], np.sum(m))
+                break
+            wstd = np.sqrt(np.sum(m * (a - np.average(a, weights=m))**2) / sum(m * a))
+            dest[i, j, 2] = wstd
+
+target_means = [np.mean(dest, axis=0) for _, _, dest in target_data]
+5/65:
+Ts = np.concatenate([
+    np.arange(0.0, 1000, 10.0),
+    np.arange(1000.0, 100000.0, 1000.0),
+    np.arange(100000.0, 1000000.0, 10000.0),
+    np.arange(1000000.0, 2000000+1, 100000.0)]
+)
+
+targets = [
+    "drag_torque",
+    "gradual_introduction",
+    "pebble_accretion"
+]
+
+target_data = [(target, dgroups[target], np.empty((32, len(Ts), 4))) for target in targets]
+
+for _, df, dest in target_data:
+    for i, row in df.reset_index().iterrows():
+        p = str(row["path"] / row["rebound_archive"])
+        sa = rebound.SimulationArchive(p)
+        for j, t in enumerate(Ts):
+            sim = sa.getSimulation(t)
+            dest[i, j, 0] = sim.N - 1
+
+            m, a = np.array([(p.m, p.a) for p in sim.particles[1:]]).T
+            ipri = np.argmax(m)
+            dest[i, j, 1] = m[ipri] / np.sum(m)
+            if dest[i, j, 1] < 0.01:
+                print(sim.t, m[ipri], np.sum(m))
+                break
+            wstd = np.sqrt(np.sum(m * (a - np.average(a, weights=m))**2) / sum(m * a))
+            dest[i, j, 2] = wstd
+
+target_means = [np.mean(dest, axis=0) for _, _, dest in target_data]
+5/66:
+import matplotlib.pyplot as plt
+from matplotlib.rcsetup import cycler
+
+fg = "#ccc"
+
+plt.rc("axes", prop_cycle=cycler(color=["3b8ce2"]), facecolor="202020", labelcolor=fg, edgecolor=fg)
+plt.rc("figure", facecolor="none")
+plt.rc("xtick", color=fg, labelcolor=fg)
+plt.rc("ytick", color=fg, labelcolor=fg)
+plt.rc("text", color=fg)
+
+target_colors = [
+    "cassum:orange",
+    "cassum:blue",
+    "tab:red",
+    "tab:green"
+]
+
+fig, axs = plt.subplots(2, 2, figsize=(11, 8), sharex=True, sharey="col")
+target_handles = []
+
+for col in range(2):
+    ax = axs[1, col]
+
+    for (target, _, _), mean, color in zip(target_data, target_means, target_colors):
+        l = ax.plot(Ts, mean[:, col], color=color, label=target)
+        target_handles.append(l[0])
+
+    ax.set_xlabel(r"$t$ [yr]")
+
+    ax = axs[0, col]
+
+    for (target, _, dest), _, color in zip(target_data, target_means, target_colors):
+        for row in dest:
+            ax.plot(Ts, row[:, col], color=color, alpha=0.2)
+
+
+# ax.set_ylabel(r"Number of suriving planets")
+
+ax = axs[0][0]
+ax.set_xscale("log")
+ax.set_xlim(5, 2000000.0)
+ax.set_ylim(0.5, 200)
+ax.set_yscale("log")
+ax.set_title("Number of remaining planets")
+
+ax.set_ylabel("All simulations")
+
+axs[0][1].set_title("Mass of primary planet $M_{\\mathrm{pri}}$")
+# axs[0][1].set_ylim(0, 0.1)
+
+# axs[0][2].set_title("Weighted mean $i$")
+# axs[0][2].set_ylim(0, 0.05)
+
+axs[1][0].set_ylabel("Mean of simulations")
+
+for ax in np.ravel(axs):
+    ax.legend(handles=target_handles[:3])
+    ax.grid(which="both", axis="y", alpha=0.2)
+
+fig.tight_layout()
+
+plt.show()
+5/67:
+Ts = np.concatenate([
+    np.arange(0.0, 1000, 10.0),
+    np.arange(1000.0, 100000.0, 1000.0),
+    np.arange(100000.0, 1000000.0, 10000.0),
+    np.arange(1000000.0, 2000000+1, 100000.0)]
+)
+
+targets = [
+    "drag_torque",
+    "gradual_introduction",
+    "pebble_accretion"
+]
+
+target_data = [(target, dgroups[target], np.empty((32, len(Ts), 4))) for target in targets]
+
+for _, df, dest in target_data:
+    for i, row in df.reset_index().iterrows():
+        p = str(row["path"] / row["rebound_archive"])
+        sa = rebound.SimulationArchive(p)
+        for j, t in enumerate(Ts):
+            sim = sa.getSimulation(t)
+            dest[i, j, 0] = sim.N - 1
+
+            m, a = np.array([(p.m, p.a) for p in sim.particles[1:]]).T
+            ipri = np.argmax(m)
+            dest[i, j, 1] = m[ipri] / np.sum(m)
+            wstd = np.sqrt(np.sum(m * (a - np.average(a, weights=m))**2) / sum(m * a))
+            dest[i, j, 2] = wstd
+
+target_means = [np.mean(dest, axis=0) for _, _, dest in target_data]
+5/68:
+Ts = np.concatenate([
+    np.arange(0.0, 1000, 10.0),
+    np.arange(1000.0, 100000.0, 1000.0),
+    np.arange(100000.0, 1000000.0, 10000.0),
+    np.arange(1000000.0, 2000000+1, 100000.0)]
+)
+
+targets = [
+    "drag_torque",
+    "gradual_introduction",
+    "pebble_accretion"
+]
+
+target_data = [(target, dgroups[target], np.empty((len(dgroups[target]), len(Ts), 4))) for target in targets]
+
+for _, df, dest in target_data:
+    for i, row in df.reset_index().iterrows():
+        p = str(row["path"] / row["rebound_archive"])
+        sa = rebound.SimulationArchive(p)
+        for j, t in enumerate(Ts):
+            sim = sa.getSimulation(t)
+            dest[i, j, 0] = sim.N - 1
+
+            m, a = np.array([(p.m, p.a) for p in sim.particles[1:]]).T
+            ipri = np.argmax(m)
+            dest[i, j, 1] = m[ipri] / np.sum(m)
+            wstd = np.sqrt(np.sum(m * (a - np.average(a, weights=m))**2) / sum(m * a))
+            dest[i, j, 2] = wstd
+
+target_means = [np.mean(dest, axis=0) for _, _, dest in target_data]
+5/69:
+import matplotlib.pyplot as plt
+from matplotlib.rcsetup import cycler
+
+fg = "#ccc"
+
+plt.rc("axes", prop_cycle=cycler(color=["3b8ce2"]), facecolor="202020", labelcolor=fg, edgecolor=fg)
+plt.rc("figure", facecolor="none")
+plt.rc("xtick", color=fg, labelcolor=fg)
+plt.rc("ytick", color=fg, labelcolor=fg)
+plt.rc("text", color=fg)
+
+target_colors = [
+    "cassum:orange",
+    "cassum:blue",
+    "tab:red",
+    "tab:green"
+]
+
+fig, axs = plt.subplots(2, 2, figsize=(11, 8), sharex=True, sharey="col")
+target_handles = []
+
+for col in range(2):
+    ax = axs[1, col]
+
+    for (target, _, _), mean, color in zip(target_data, target_means, target_colors):
+        l = ax.plot(Ts, mean[:, col], color=color, label=target)
+        target_handles.append(l[0])
+
+    ax.set_xlabel(r"$t$ [yr]")
+
+    ax = axs[0, col]
+
+    for (target, _, dest), _, color in zip(target_data, target_means, target_colors):
+        for row in dest:
+            ax.plot(Ts, row[:, col], color=color, alpha=0.2)
+
+
+# ax.set_ylabel(r"Number of suriving planets")
+
+ax = axs[0][0]
+ax.set_xscale("log")
+ax.set_xlim(5, 2000000.0)
+ax.set_ylim(0.5, 200)
+ax.set_yscale("log")
+ax.set_title("Number of remaining planets")
+
+ax.set_ylabel("All simulations")
+
+axs[0][1].set_title("Mass of primary planet $M_{\\mathrm{pri}}$")
+# axs[0][1].set_ylim(0, 0.1)
+
+# axs[0][2].set_title("Weighted mean $i$")
+# axs[0][2].set_ylim(0, 0.05)
+
+axs[1][0].set_ylabel("Mean of simulations")
+
+for ax in np.ravel(axs):
+    ax.legend(handles=target_handles[:3])
+    ax.grid(which="both", axis="y", alpha=0.2)
+
+fig.tight_layout()
+
+plt.show()
+5/70:
+Ts = np.concatenate([
+    np.arange(0.0, 1000, 10.0),
+    np.arange(1000.0, 100000.0, 1000.0),
+    np.arange(100000.0, 1000000.0, 10000.0),
+    np.arange(1000000.0, 2000000+1, 100000.0)]
+)
+
+targets = [
+    "drag_torque",
+    "gradual_introduction",
+    "pebble_accretion",
+    "steep_alpha"
+]
+
+target_data = [(target, dgroups[target], np.empty((len(dgroups[target]), len(Ts), 4))) for target in targets]
+
+for _, df, dest in target_data:
+    for i, row in df.reset_index().iterrows():
+        p = str(row["path"] / row["rebound_archive"])
+        sa = rebound.SimulationArchive(p)
+        for j, t in enumerate(Ts):
+            sim = sa.getSimulation(t)
+            dest[i, j, 0] = sim.N - 1
+
+            m, a = np.array([(p.m, p.a) for p in sim.particles[1:]]).T
+            ipri = np.argmax(m)
+            dest[i, j, 1] = m[ipri] / np.sum(m)
+            wstd = np.sqrt(np.sum(m * (a - np.average(a, weights=m))**2) / sum(m * a))
+            dest[i, j, 2] = wstd
+
+target_means = [np.mean(dest, axis=0) for _, _, dest in target_data]
+5/71:
+import matplotlib.pyplot as plt
+from matplotlib.rcsetup import cycler
+
+fg = "#ccc"
+
+plt.rc("axes", prop_cycle=cycler(color=["3b8ce2"]), facecolor="202020", labelcolor=fg, edgecolor=fg)
+plt.rc("figure", facecolor="none")
+plt.rc("xtick", color=fg, labelcolor=fg)
+plt.rc("ytick", color=fg, labelcolor=fg)
+plt.rc("text", color=fg)
+
+target_colors = [
+    "cassum:orange",
+    "cassum:blue",
+    "tab:red",
+    "tab:green"
+]
+
+fig, axs = plt.subplots(2, 2, figsize=(11, 8), sharex=True, sharey="col")
+target_handles = []
+
+for col in range(2):
+    ax = axs[1, col]
+
+    for (target, _, _), mean, color in zip(target_data, target_means, target_colors):
+        l = ax.plot(Ts, mean[:, col], color=color, label=target)
+        target_handles.append(l[0])
+
+    ax.set_xlabel(r"$t$ [yr]")
+
+    ax = axs[0, col]
+
+    for (target, _, dest), _, color in zip(target_data, target_means, target_colors):
+        for row in dest:
+            ax.plot(Ts, row[:, col], color=color, alpha=0.2)
+
+
+# ax.set_ylabel(r"Number of suriving planets")
+
+ax = axs[0][0]
+ax.set_xscale("log")
+ax.set_xlim(5, 2000000.0)
+ax.set_ylim(0.5, 200)
+ax.set_yscale("log")
+ax.set_title("Number of remaining planets")
+
+ax.set_ylabel("All simulations")
+
+axs[0][1].set_title("Mass of primary planet $M_{\\mathrm{pri}}$")
+# axs[0][1].set_ylim(0, 0.1)
+
+# axs[0][2].set_title("Weighted mean $i$")
+# axs[0][2].set_ylim(0, 0.05)
+
+axs[1][0].set_ylabel("Mean of simulations")
+
+for ax in np.ravel(axs):
+    ax.legend(handles=target_handles[:3])
+    ax.grid(which="both", axis="y", alpha=0.2)
+
+fig.tight_layout()
+
+plt.show()
+5/72:
+import matplotlib.pyplot as plt
+from matplotlib.rcsetup import cycler
+
+fg = "#ccc"
+
+plt.rc("axes", prop_cycle=cycler(color=["3b8ce2"]), facecolor="202020", labelcolor=fg, edgecolor=fg)
+plt.rc("figure", facecolor="none")
+plt.rc("xtick", color=fg, labelcolor=fg)
+plt.rc("ytick", color=fg, labelcolor=fg)
+plt.rc("text", color=fg)
+
+target_colors = [
+    "cassum:orange",
+    "cassum:blue",
+    "tab:red",
+    "tab:green"
+]
+
+fig, axs = plt.subplots(2, 2, figsize=(11, 8), sharex=True, sharey="col")
+target_handles = []
+
+for col in range(2):
+    ax = axs[1, col]
+
+    for (target, _, _), mean, color in zip(target_data, target_means, target_colors):
+        l = ax.plot(Ts, mean[:, col], color=color, label=target)
+        target_handles.append(l[0])
+
+    ax.set_xlabel(r"$t$ [yr]")
+
+    ax = axs[0, col]
+
+    for (target, _, dest), _, color in zip(target_data, target_means, target_colors):
+        for row in dest:
+            ax.plot(Ts, row[:, col], color=color, alpha=0.2)
+
+
+# ax.set_ylabel(r"Number of suriving planets")
+
+ax = axs[0][0]
+ax.set_xscale("log")
+ax.set_xlim(5, 2000000.0)
+ax.set_ylim(0.5, 200)
+ax.set_yscale("log")
+ax.set_title("Number of remaining planets")
+
+ax.set_ylabel("All simulations")
+
+axs[0][1].set_title("Mass of primary planet $M_{\\mathrm{pri}}$")
+# axs[0][1].set_ylim(0, 0.1)
+
+# axs[0][2].set_title("Weighted mean $i$")
+# axs[0][2].set_ylim(0, 0.05)
+
+axs[1][0].set_ylabel("Mean of simulations")
+
+for ax in np.ravel(axs):
+    ax.legend(handles=target_handles[:4])
+    ax.grid(which="both", axis="y", alpha=0.2)
+
+fig.tight_layout()
+
+plt.show()
+5/73:
+import matplotlib.pyplot as plt
+from matplotlib.rcsetup import cycler
+
+fg = "#ccc"
+
+plt.rc("axes", prop_cycle=cycler(color=["3b8ce2"]), facecolor="202020", labelcolor=fg, edgecolor=fg)
+plt.rc("figure", facecolor="none")
+plt.rc("xtick", color=fg, labelcolor=fg)
+plt.rc("ytick", color=fg, labelcolor=fg)
+plt.rc("text", color=fg)
+
+target_colors = [
+    "cassum:orange",
+    "cassum:blue",
+    "tab:red",
+    "tab:green"
+]
+
+fig, axs = plt.subplots(2, 2, figsize=(11, 8), sharex=True, sharey="col")
+target_handles = []
+
+for col in range(2):
+    ax = axs[1, col]
+
+    for (target, _, _), mean, color in zip(target_data, target_means, target_colors):
+        l = ax.plot(Ts, mean[:, col], color=color, label=target)
+        target_handles.append(l[0])
+
+    ax.set_xlabel(r"$t$ [yr]")
+
+    ax = axs[0, col]
+
+    for (target, _, dest), _, color in zip(target_data, target_means, target_colors):
+        for row in dest:
+            ax.plot(Ts, row[:, col], color=color, alpha=0.2)
+
+
+# ax.set_ylabel(r"Number of suriving planets")
+
+ax = axs[0][0]
+ax.set_xscale("log")
+ax.set_xlim(5, 2000000.0)
+ax.set_ylim(0.9, 120)
+ax.set_yscale("log")
+ax.set_title("Number of remaining planets")
+
+ax.set_ylabel("All simulations")
+
+axs[0][1].set_title("Mass of primary planet $M_{\\mathrm{pri}}$")
+# axs[0][1].set_ylim(0, 0.1)
+
+# axs[0][2].set_title("Weighted mean $i$")
+# axs[0][2].set_ylim(0, 0.05)
+
+axs[1][0].set_ylabel("Mean of simulations")
+
+for ax in np.ravel(axs):
+    ax.legend(handles=target_handles[:4])
+    ax.grid(which="both", axis="y", alpha=0.2)
+
+fig.tight_layout()
+
+plt.show()
+5/74:
+Ts = np.concatenate([
+    np.arange(0.0, 1000, 10.0),
+    np.arange(1000.0, 100000.0, 1000.0),
+    np.arange(100000.0, 1000000.0, 10000.0),
+    np.arange(1000000.0, 2000000+1, 100000.0)]
+)
+
+targets = [
+    "drag_torque",
+    "gradual_introduction",
+    "pebble_accretion",
+    "steep_alpha",
+    "scale_torque_10",
+    "scale_torque_100"
+]
+
+target_data = [(target, dgroups[target], np.empty((len(dgroups[target]), len(Ts), 4))) for target in targets]
+
+for _, df, dest in target_data:
+    for i, row in df.reset_index().iterrows():
+        p = str(row["path"] / row["rebound_archive"])
+        sa = rebound.SimulationArchive(p)
+        for j, t in enumerate(Ts):
+            sim = sa.getSimulation(t)
+            dest[i, j, 0] = sim.N - 1
+
+            m, a = np.array([(p.m, p.a) for p in sim.particles[1:]]).T
+            ipri = np.argmax(m)
+            dest[i, j, 1] = m[ipri] / np.sum(m)
+            wstd = np.sqrt(np.sum(m * (a - np.average(a, weights=m))**2) / sum(m * a))
+            dest[i, j, 2] = wstd
+
+target_means = [np.mean(dest, axis=0) for _, _, dest in target_data]
+5/75:
+import matplotlib.pyplot as plt
+from matplotlib.rcsetup import cycler
+
+fg = "#ccc"
+
+plt.rc("axes", prop_cycle=cycler(color=["3b8ce2"]), facecolor="202020", labelcolor=fg, edgecolor=fg)
+plt.rc("figure", facecolor="none")
+plt.rc("xtick", color=fg, labelcolor=fg)
+plt.rc("ytick", color=fg, labelcolor=fg)
+plt.rc("text", color=fg)
+
+target_colors = [
+    "cassum:orange",
+    "cassum:blue",
+    "tab:red",
+    "tab:green",
+    "tab:purple",
+    "tab:pink"
+]
+
+fig, axs = plt.subplots(2, 2, figsize=(11, 8), sharex=True, sharey="col")
+target_handles = []
+
+for col in range(2):
+    ax = axs[1, col]
+
+    for (target, _, _), mean, color in zip(target_data, target_means, target_colors):
+        l = ax.plot(Ts, mean[:, col], color=color, label=target)
+        target_handles.append(l[0])
+
+    ax.set_xlabel(r"$t$ [yr]")
+
+    ax = axs[0, col]
+
+    for (target, _, dest), _, color in zip(target_data, target_means, target_colors):
+        for row in dest:
+            ax.plot(Ts, row[:, col], color=color, alpha=0.2)
+
+
+# ax.set_ylabel(r"Number of suriving planets")
+
+ax = axs[0][0]
+ax.set_xscale("log")
+ax.set_xlim(5, 2000000.0)
+ax.set_ylim(0.9, 120)
+ax.set_yscale("log")
+ax.set_title("Number of remaining planets")
+
+ax.set_ylabel("All simulations")
+
+axs[0][1].set_title("Mass of primary planet $M_{\\mathrm{pri}}$")
+# axs[0][1].set_ylim(0, 0.1)
+
+# axs[0][2].set_title("Weighted mean $i$")
+# axs[0][2].set_ylim(0, 0.05)
+
+axs[1][0].set_ylabel("Mean of simulations")
+
+for ax in np.ravel(axs):
+    ax.legend(handles=target_handles[:4])
+    ax.grid(which="both", axis="y", alpha=0.2)
+
+fig.tight_layout()
+
+plt.show()
+5/76:
+import matplotlib.pyplot as plt
+from matplotlib.rcsetup import cycler
+
+fg = "#ccc"
+
+plt.rc("axes", prop_cycle=cycler(color=["3b8ce2"]), facecolor="202020", labelcolor=fg, edgecolor=fg)
+plt.rc("figure", facecolor="none")
+plt.rc("xtick", color=fg, labelcolor=fg)
+plt.rc("ytick", color=fg, labelcolor=fg)
+plt.rc("text", color=fg)
+
+target_colors = [
+    "cassum:orange",
+    "cassum:blue",
+    "tab:red",
+    "tab:green",
+    "tab:purple",
+    "tab:pink"
+]
+
+fig, axs = plt.subplots(2, 2, figsize=(11, 8), sharex=True, sharey="col")
+target_handles = []
+
+for col in range(2):
+    ax = axs[1, col]
+
+    for (target, _, _), mean, color in zip(target_data, target_means, target_colors):
+        l = ax.plot(Ts, mean[:, col], color=color, label=target)
+        target_handles.append(l[0])
+
+    ax.set_xlabel(r"$t$ [yr]")
+
+    ax = axs[0, col]
+
+    for (target, _, dest), _, color in zip(target_data, target_means, target_colors):
+        for row in dest:
+            ax.plot(Ts, row[:, col], color=color, alpha=0.2)
+
+
+# ax.set_ylabel(r"Number of suriving planets")
+
+ax = axs[0][0]
+ax.set_xscale("log")
+ax.set_xlim(5, 2000000.0)
+ax.set_ylim(0.9, 120)
+ax.set_yscale("log")
+ax.set_title("Number of remaining planets")
+
+ax.set_ylabel("All simulations")
+
+axs[0][1].set_title("Mass of primary planet $M_{\\mathrm{pri}}$")
+# axs[0][1].set_ylim(0, 0.1)
+
+# axs[0][2].set_title("Weighted mean $i$")
+# axs[0][2].set_ylim(0, 0.05)
+
+axs[1][0].set_ylabel("Mean of simulations")
+
+for ax in np.ravel(axs):
+    ax.legend(handles=target_handles[:6])
+    ax.grid(which="both", axis="y", alpha=0.2)
+
+fig.tight_layout()
+
+plt.show()
+ 7/1: %history -g
+ 8/1:
+from pathlib import Path
+import pandas as pd
+import os
+
+data_dir = Path(os.environ["PARENT_SLURM_DIR"])
+jobs = [
+    "IOPFPlanets20220810",
+    "IOPFPlanets20220820",
+    "IOPFPlanets20220822Narrow",
+    "IOPFPlanets20220927",
+    "IOPFPlanets20220928ALPHA",
+    "IOPFPlanets20220928GRADUAL",
+    "IOPFPlanets20220928SCALETORQUE"
+]
+
+argfiles = [argfile for job in jobs for argfile in (data_dir / job).glob("*/args.json")]
+sims_records = pd.DataFrame.from_records(pd.read_json(argfile, typ="series") for argfile in argfiles)
+sims_paths = pd.DataFrame.from_records({"run": argfile.parent.name, "path": argfile.parent} for argfile in argfiles)
+sims_df = pd.concat([sims_records, sims_paths], axis="columns")
+
+import matplotlib
+
+matplotlib.colors.ColorConverter.colors['cassum:orange'] = "#e77a35"
+matplotlib.colors.ColorConverter.colors['cassum:blue'] = "#3b8ce2"
+
+matplotlib.colors.cnames['cassum:orange'] = "#e77a35"
+matplotlib.colors.cnames['cassum:blue'] = "#3b8ce2"
+ 8/2:
+import rebound
+
+sim_cache = {}
+for i, rebound_path in (sims_df["path"] / sims_df["rebound_archive"]).items():
+    sa = rebound.SimulationArchive(str(rebound_path))
+    final = sa[-1]
+    sim_cache[sims_df.at[i, "run"]] = {
+        "sa": sa,
+        "final": final,
+        "byindex": {
+
+        },
+        "h5path": next(sims_df.at[i, "path"].glob("*.h5"))
+    }
+
+def load_sim_from_cache(run, time):
+    sa = sim_cache[run]["sa"]
+    _i, _ = sa._getSnapshotIndex(time)
+    if _i in sim_cache[run]["byindex"]:
+        return sim_cache[run]["byindex"][_i]
+    else:
+        sim = sa[_i]
+        sim_cache[run]["byindex"][_i] = sim
+        return sim
+ 9/1:
+from pathlib import Path
+import pandas as pd
+import os
+
+data_dir = Path(os.environ["PARENT_SLURM_DIR"])
+jobs = [
+    "IOPFPlanets20220810",
+    "IOPFPlanets20220820",
+    "IOPFPlanets20220822Narrow",
+    "IOPFPlanets20220927",
+    "IOPFPlanets20220928ALPHA",
+    "IOPFPlanets20220928GRADUAL",
+    "IOPFPlanets20220928SCALETORQUE"
+]
+
+argfiles = [argfile for job in jobs for argfile in (data_dir / job).glob("*/args.json")]
+sims_records = pd.DataFrame.from_records(pd.read_json(argfile, typ="series") for argfile in argfiles)
+sims_paths = pd.DataFrame.from_records({"run": argfile.parent.name, "path": argfile.parent} for argfile in argfiles)
+sims_df = pd.concat([sims_records, sims_paths], axis="columns")
+
+import matplotlib
+
+matplotlib.colors.ColorConverter.colors['cassum:orange'] = "#e77a35"
+matplotlib.colors.ColorConverter.colors['cassum:blue'] = "#3b8ce2"
+
+matplotlib.colors.cnames['cassum:orange'] = "#e77a35"
+matplotlib.colors.cnames['cassum:blue'] = "#3b8ce2"
+ 9/2:
+import rebound
+
+sim_cache = {}
+for i, rebound_path in (sims_df["path"] / sims_df["rebound_archive"]).items():
+    sa = rebound.SimulationArchive(str(rebound_path))
+    final = sa[-1]
+    sim_cache[sims_df.at[i, "run"]] = {
+        "sa": sa,
+        "final": final,
+        "byindex": {
+
+        },
+        "h5path": next(sims_df.at[i, "path"].glob("*.h5"))
+    }
+
+def load_sim_from_cache(run, time):
+    sa = sim_cache[run]["sa"]
+    _i, _ = sa._getSnapshotIndex(time)
+    if _i in sim_cache[run]["byindex"]:
+        return sim_cache[run]["byindex"][_i]
+    else:
+        sim = sa[_i]
+        sim_cache[run]["byindex"][_i] = sim
+        return sim
+   1: %help history
+   2: %history -h
+   3: %history --help
+   4: %history
+   5: %history -g -f out

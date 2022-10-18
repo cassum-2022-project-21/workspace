@@ -24,23 +24,26 @@ def generate_ic():
         "store-dt": 1000.0,
         "n-particles": 100,
         "code-name": "rebound",
-        "alpha": -2,
+#        "alpha": -2,
         # "rebound-archive": "rebound_archive.bin",
         ("pa-rate", "pa-beta"): [(0.0, None)],
-        "drag-coefficient": [0.0, 0.44],
-       "migration-torque": ["", None],
-        # "migration-torque": "",
+        # "drag-coefficient": [0.0, 0.44],
+        "drag-coefficient": 0.44,
+        # "migration-torque": ["", None],
+        "migration-torque": "",
         "N_end": 1,
         "N_enddelay": 1.0,
 
         "m-total": 1.0,
 
-        ("a-in", "a-out", "std-e", "std-i"): [(0.22, 0.24, 0.02, 0.01)],
+        ("a-in", "a-out", "std-e", "std-i"): [(0.222, 0.232, 0.02, 0.01)],
         # ("a-in", "a-out", "std-e", "std-i"): [(0.229, 0.231, 0.02, 0.0)],
         # ("a-in", "a-out", "std-e", "std-i"): [(0.229, 0.231, 0.02, 0.01), (0.22, 0.24, 0.02, 0.0)],
 
+        ("pa-rate", "pa-beta"): [(None, None)],
         "rho": 3.0,
-        "N_handoff": -1
+        "N_handoff": 60,
+        "torque-scale": [10, 100],
 
         # "continue-from": 1100000.0
     }

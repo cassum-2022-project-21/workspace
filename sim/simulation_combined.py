@@ -40,9 +40,12 @@ class Simulation(object):
         self.reb_continue = False
         self.introduction_times = None
         self.introduction_index = None
+        self.is_introducing = False
 
         self.verbose = True
         self.io = io
+
+        self._total_accreted = 0
 
     def parse_arguments(self, override=None):
         parser = argparse.ArgumentParser()
@@ -81,7 +84,7 @@ class Simulation(object):
 
         parser.add_argument('--N_handoff', dest='N_handoff', type=int, default=-1, help="Switch to mercurius integrator")
 
-        parser.add_argument('--introduction-time', dest='introduction_time', type=float, default=None, help="Time to introduce all particles")
+        parser.add_argument('--formation-time', dest='introduction_time', type=float, default=None, help="Time to introduce planetesimals")
 
         parser.add_argument('--torque-scale', dest='torque_scale', type=float, default=1.0, help='Torque scaling factor')
         
@@ -94,7 +97,10 @@ class Simulation(object):
         self.pa_beta_f = float(n) / float(d)
 
         if self.args.introduction_time is not None:
+            self.is_introducing = True
             self.introduction_times = np.sort(np.random.sample(self.args.n_p-1)) * self.args.introduction_time
+            self.introduction_pa_rate = (self.args.m_total | units.MEarth).value_in(units.MSun) / self.args.introduction_time / 2.
+            print(f"Using pebble accretion rate of {self.introduction_pa_rate:.4e} during introduction time")
 
         if self.args.rebound_archive is None:
             self.args.rebound_archive = f"rebound_archive_{self.args.seed}.bin"
@@ -159,15 +165,22 @@ class Simulation(object):
     
         np.random.seed(self.args.seed)
         # alpha = 0: random and uniform distribution of mass; alpha < 0: power-law IMF; alpha = None: equal-mass
+
+        if self.args.introduction_time is None:
+            m_total = self.args.m_total
+        else:
+            m_total = self.args.m_total / 2.
+
         if self.args.alpha is None:
             self.print('Creating equal-mass system...')
-            m_p = np.ones(self.args.n_p) * (self.args.m_total / self.args.n_p) | units.MEarth
+            m_p = np.ones(self.args.n_p) * (m_total / self.args.n_p) | units.MEarth
+            self.print('Total mass = %f [MEarth] (scaled)' % m_p.value_in(units.MEarth).sum())
         else:
             self.print('Creating system with a mass spectrum of alpha = %f' % float(self.args.alpha))
             m_p = new_powerlaw_mass_distribution(self.args.n_p, 0.003|units.MEarth, 0.1|units.MEarth, alpha=float(self.args.alpha))
             # scaling to the total mass of planetesimals
             m_scale_factor = m_p.value_in(units.MEarth).sum()
-            m_p /= m_scale_factor
+            m_p = m_total * (m_p / m_scale_factor)
             self.print('Total mass = %f [MEarth] (scaled)' % m_p.value_in(units.MEarth).sum())
         a_p = np.random.uniform(low=self.args.a_in, high=self.args.a_out, size=(self.args.n_p, ))
         # The std(i) = 0.01 and std(e) = 0.02 of Rayleigh distribution is adopted from Kokubo & Ida (2002), section 3.1
@@ -202,15 +215,16 @@ class Simulation(object):
             self.sim.add(m=self.args.pm, a=self.args.pa, r=r_planet, primary=self.sim.particles[0],
                             hash=np.random.randint(100000000, 999999999))
 
-        n_init = self.args.n_p if self.args.introduction_time is None else 1
-        self.print('Adding N=%d planetesimals...' % n_init)
-        for i in range(n_init):
+        self.n_init = self.args.n_p if self.args.introduction_time is None else 1
+        self.print('Adding N=%d planetesimals...' % self.n_init)
+        for i in range(self.n_init):
             self.sim.add(m=m_p[i].value_in(units.MSun), a=a_p[i]+a_gap, e=e_p[i], inc=i_p[i], Omega=Ω_p[i], omega=ω_p[i], f=f_p[i], r=r_p[i],
                             primary=self.sim.particles[0], hash=np.random.randint(100000000, 999999999))
         self.m_p = m_p; self.a_p = a_p; self.a_gap = a_gap; self.e_p = e_p; self.i_p = i_p; self.f_p = f_p; self.Ω_p = Ω_p; self.ω_p = ω_p; self.r_p = r_p
         
         if self.args.introduction_time is not None:
-            self.introduction_index = n_init
+            self.introduction_index = 0
+            self.print("Planning to introduce particles at ", self.introduction_times)
 
         self.sim.move_to_com()
         # initialize the buffer
@@ -315,25 +329,34 @@ class Simulation(object):
         self.buffer_rebound.store_state(self.sim.t, pos=pos, vel=vel, masses=masses, a=semi, e=ecc, i=inc, names=hashes,
                                         energy=energy)
 
-    def pebble_accretion(self):
-        if self.args.pa_rate == 0:
+    def pebble_accretion(self, dt):
+        if self.args.pa_rate == 0 and not self.is_introducing:
             return
+
+        if self.is_introducing:
+            pa_rate = self.introduction_pa_rate * dt
+            if self.args.introduction_time is None:
+                self.is_introducing = False
         else:
-            pa_rate = self.args.pa_rate * self.dt
-            m_i2 = np.zeros(self.sim.N)
-            for i in range(1, self.sim.N):
-                m_i2[i] = self.sim.particles[i].m ** self.pa_beta_f
-            mtot = m_i2.sum()
-            for i in range(1, self.sim.N):
-                self.sim.particles[i].m += (m_i2[i]/mtot*pa_rate)
+            pa_rate = self.args.pa_rate * dt
+    
+        m_i2 = np.zeros(self.sim.N)
+        for i in range(1, self.sim.N):
+            m_i2[i] = self.sim.particles[i].m ** self.pa_beta_f
+        mtot = m_i2.sum()
+        for i in range(1, self.sim.N):
+            self.sim.particles[i].m += (m_i2[i]/mtot*pa_rate)
+        
+        self._total_accreted += pa_rate
+        self.print(f"Accreted {pa_rate}. Total accreted so far {self._total_accreted}")
 
     def introduce_particle(self):
-        i = self.introduction_index
+        i = self.introduction_index + self.n_init
         self.sim.add(m=self.m_p[i].value_in(units.MSun), a=self.a_p[i]+self.a_gap,
                 e=self.e_p[i], inc=self.i_p[i], Omega=self.Ω_p[i], omega=self.ω_p[i], f=self.f_p[i], r=self.r_p[i],
                 primary=self.sim.particles[0], hash=np.random.randint(100000000, 999999999))
         self.introduction_index += 1
-        if self.introduction_index == self.args.n_p-1:
+        if self.introduction_index + self.n_init == self.args.n_p:
             self.introduction_index = None
 
 
@@ -348,10 +371,11 @@ class Simulation(object):
         self.t_store = self.sim.t
         while self.sim.t < self.args.t_end and not self.should_early_stop:
             nt, should_introduce = self.next_t(self.t_store)
+            print(f"Attemping to integrate to {nt}")
             while self.sim.t < nt:
                 try:
                     self.sim.integrate(nt)
-                    self.pebble_accretion()
+                    self.pebble_accretion(self.sim.t - self.t_store)
                     self.sim.move_to_com()
                 except rebound.Collision as error:
                     self.print('A collision occurred', error)
@@ -409,7 +433,12 @@ class Simulation(object):
     def next_t(self, store_t):
         reg = store_t + self.dt
         if self.introduction_index is None:
-            return reg, False
+            if self.args.introduction_time is not None and reg > self.args.introduction_time:
+                _t = self.args.introduction_time
+                self.args.introduction_time = None
+                return _t, False
+            else:
+                return reg, False
         irr = self.introduction_times[self.introduction_index]
         if irr < reg:
             return irr, True
@@ -429,18 +458,18 @@ if __name__ == "__main__":
     else:
         sim.ic_generate()
 
-    # def interrupt_handler(signum, frame):
-    #     print(f"Interrupt at {sim.sim.t=}. Calling sim.finalize()", file=sys.stderr)
-    #     sim.finalize()
-    #     sys.exit(1)
+    def interrupt_handler(signum, frame):
+        print(f"Interrupt at {sim.sim.t=}. Calling sim.finalize()", file=sys.stderr)
+        sim.finalize()
+        sys.exit(1)
 
-    # signal.signal(signal.SIGINT, interrupt_handler)
+    signal.signal(signal.SIGINT, interrupt_handler)
 
-    # sim.evolve_model()
+    sim.evolve_model()
 
-    # try:
-    #     sim.save()
-    #     sim.finalize()
-    #     open("DONE", "w").close()
-    # except KeyboardInterrupt:
-    #     interrupt_handler(None, None)
+    try:
+        sim.save()
+        sim.finalize()
+        open("DONE", "w").close()
+    except KeyboardInterrupt:
+        interrupt_handler(None, None)

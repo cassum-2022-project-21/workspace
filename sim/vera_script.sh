@@ -5,7 +5,7 @@
 #SBATCH --ntasks=1
 
 #SBATCH -t 1-12:00:00
-#SBATCH --cpus-per-task=1
+#SBATCH --cpus-per-task=2
 #SBATCH --mem-per-cpu 1024MB
 
 # flat_modules
